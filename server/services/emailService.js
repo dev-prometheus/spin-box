@@ -5,7 +5,7 @@ function getFromAddress() {
   return process.env.RESEND_FROM_EMAIL || 'TemuSpinBox <noreply@temuspinbox.com>';
 }
 
-async function dispatchResendEmail({ to, subject, html, text }) {
+async function dispatchResendEmail({ to, subject, html, text, replyTo }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey || apiKey.startsWith('your-')) {
     throw new Error('Missing RESEND_API_KEY in server/.env');
@@ -22,7 +22,8 @@ async function dispatchResendEmail({ to, subject, html, text }) {
       to: Array.isArray(to) ? to : [to],
       subject,
       html,
-      text
+      text,
+      ...(replyTo && { reply_to: replyTo })
     }),
     signal: AbortSignal.timeout(10000)
   });
@@ -124,5 +125,18 @@ export function sendWithdrawalCompletedEmail(toEmail, { amountUsd, asset, chain,
     ],
     note: 'Use the transaction reference to look up the transfer on the listed network.',
     action: 'Open player dashboard',
+  });
+}
+
+export function sendSupportEmail({ email, topic, reference, message }) {
+  const details = [`Reply email: ${email}`];
+  if (reference) details.push(`Reference: ${reference}`);
+  const text = [...details, '', message].join('\n');
+  return dispatchResendEmail({
+    to: 'support@temuspinbox.com',
+    subject: `TemuSpinBox support: ${topic}`,
+    replyTo: email,
+    text,
+    html: `<div style="white-space:pre-wrap">${escapeHtml(text)}</div>`,
   });
 }

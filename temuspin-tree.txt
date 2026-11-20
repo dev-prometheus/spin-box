@@ -1,0 +1,70 @@
+Folder PATH listing
+Volume serial number is 5037-8652
+C:.
+|   .env.local
+|   .gitignore
+|   eslint.config.js
+|   index.html
+|   package-lock.json
+|   package.json
+|   README.md
+|   temuspin-tree.txt
+|   vite.config.js
+|   
++---public
+|       favicon.svg
+|       icons.svg
+|       manifest.json
+|       
+\---src
+    |   App.jsx
+    |   index.css
+    |   main.jsx
+    |   
+    +---assets
+    |       hero.png
+    |       react.svg
+    |       vite.svg
+    |       
+    +---components
+    |       AuthModal.jsx
+    |       CryptoWalletModal.jsx
+    |       Footer.jsx
+    |       FulfillmentModal.jsx
+    |       Navbar.jsx
+    |       OrderTracker.jsx
+    |       ReferralTree.jsx
+    |       SpinWheel.jsx
+    |       TemuInspector.jsx
+    |       UgcProofCard.jsx
+    |       
+    +---pages
+    |       AdminDashboard.jsx
+    |       Dashboard.jsx
+    |       Landing.jsx
+    |       Legal.jsx
+    |       
+    +---services
+    |       supabaseClient.js
+    |       
+    \---styles
+        |   variables.css
+        |   
+        +---components
+        |       AuthModal.css
+        |       CryptoWalletModal.css
+        |       Footer.css
+        |       FulfillmentModal.css
+        |       Navbar.css
+        |       OrderTracker.css
+        |       ReferralTree.css
+        |       SpinWheel.css
+        |       TemuInspector.css
+        |       UgcProofCard.css
+        |       
+        \---pages
+                AdminDashboard.css
+                Dashboard.css
+                Landing.css
+                Legal.css
+                

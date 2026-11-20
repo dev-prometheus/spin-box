@@ -4,6 +4,7 @@ import cors from 'cors';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
+import supportRoutes from './routes/supportRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import temuRoutes from './routes/temuRoutes.js';
 import walletRoutes from './routes/walletRoutes.js';
@@ -39,6 +40,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/support', supportRoutes);
 app.use('/api/temu', temuRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/admin', adminRoutes);

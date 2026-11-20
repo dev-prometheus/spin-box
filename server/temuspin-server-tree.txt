@@ -1,0 +1,26 @@
+Folder PATH listing
+Volume serial number is 5037-8652
+C:.
+|   .env
+|   index.js
+|   package-lock.json
+|   package.json
+|   temuspin-server-tree.txt
+|   
++---config
+|       supabaseAdmin.js
+|       
++---routes
+|       adminRoutes.js
+|       authRoutes.js
+|       temuRoutes.js
+|       walletRoutes.js
+|       
+\---services
+        depositWatcher.js
+        emailService.js
+        hdWalletService.js
+        priceOracle.js
+        stealthScraper.js
+        temuScraper.js
+        
