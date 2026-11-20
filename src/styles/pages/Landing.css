@@ -100,3 +100,83 @@
 @media (max-width: 760px) {
   .tsb-game-hero h1 { font-size: clamp(38px, 10.8vw, 59px); }
 }
+
+/* Bright storefront palette */
+.tsb-landing {
+  --tsb-bg: #fff8ee;
+  --tsb-surface: #fff;
+  --tsb-text: #37190d;
+  --tsb-muted: #684737;
+  --tsb-accent: #bd3908;
+  --tsb-line: #edceb8;
+  --tsb-ivory: #37190d;
+}
+.tsb-public-header:has(+ .tsb-landing),
+body:has(.tsb-landing) .tsb-public-header {
+  background: #fff8ee;
+  border-color: #edceb8;
+  color: #37190d;
+}
+body:has(.tsb-landing) .tsb-public-header :is(.tsb-brand, a, button, .tsb-currency) { color: #37190d; }
+.tsb-landing .tsb-button { background: #ff7829; color: #351706; border-radius: 999px; }
+.tsb-landing .tsb-button:hover { background: #ff984d; }
+.tsb-landing .tsb-button-dark { background: #411b0b; color: #fff8ee; }
+.tsb-landing .tsb-button-dark:hover { background: #63280f; }
+.tsb-game-hero .tsb-risk,
+.tsb-game-hero .tsb-lead,
+.tsb-game-hero .tsb-kicker,
+.tsb-landing .tsb-pick-intro .tsb-kicker,
+.tsb-landing .tsb-proof-heading > p,
+.tsb-landing .tsb-referral-intro > p { color: var(--tsb-muted); }
+.tsb-hero-prize {
+  aspect-ratio: 5 / 4;
+  overflow: hidden;
+  border-radius: 28px;
+  background: #ffe3bf;
+}
+.tsb-hero-prize img { width: 100%; height: 100%; object-fit: cover; object-position: center 52%; }
+.tsb-landing .tsb-outcomes { background: #ffe9d5; }
+.tsb-landing .tsb-outcome-tabs button[aria-selected=true] { background: #ffdab6; color: #431e10; }
+.tsb-landing :is(.tsb-pick-intro, .tsb-referral-intro, .tsb-proof-heading) h2 span { color: var(--tsb-accent); }
+.tsb-landing .tsb-final-inner { background: #ff9a45; color: #351706; }
+.tsb-welcome-dialog {
+  width: min(456px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  margin: auto;
+  border: 0;
+  border-radius: 24px;
+  background: #fff8ee;
+  color: #37190d;
+  overscroll-behavior: contain;
+}
+.tsb-welcome-dialog::backdrop { background: rgb(62 24 9 / 72%); }
+body:has(.tsb-welcome-dialog[open]) { overflow: hidden; }
+.tsb-welcome-close {
+  position: absolute;
+  inset: 10px 10px auto auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  z-index: 2;
+  border: 1px solid #edceb8;
+  border-radius: 50%;
+  background: #fff;
+  color: #37190d;
+  cursor: pointer;
+}
+.tsb-landing .tsb-welcome-dialog .welcome-game {
+  background: radial-gradient(ellipse at 50% 42%, #ffe4a6, #fff8ee 75%);
+  color: #37190d;
+  border: 0;
+  box-shadow: none;
+}
+.tsb-welcome-dialog .welcome-game-top { padding-right: 42px; }
+.tsb-welcome-dialog .welcome-game-top,
+.tsb-welcome-dialog .welcome-feedback,
+.tsb-welcome-dialog .welcome-game-disclosure { color: #684737; }
+.tsb-welcome-dialog .welcome-reward-line { border-color: #edceb8; }
+.tsb-welcome-dialog .welcome-reward-line strong { color: #a52e06; }
+.tsb-landing .tsb-welcome-dialog .welcome-game h2 { font-size: clamp(32px, 7vw, 46px); font-weight: 750; }
+.tsb-welcome-dialog .welcome-wheel-shell { width: min(100%, 310px, 45dvh); }

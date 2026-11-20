@@ -29,6 +29,8 @@ export default function OrderTracker({ wins = [], onClaimUnclaimed }) {
                 <div><h3>{win.product_title || 'Temu item'}</h3><p>Item value {formatMoney(win.retail_value_usd)}</p></div>
                 <span className="orders-status">{status}</span>
               </div>
+              {win.order_selection && <p className="orders-detail">Quantity {win.order_selection.quantity} {Object.values(win.order_selection.options ?? {}).join(' / ')}</p>}
+              {win.liquidation_reason && <p className="orders-detail">Delivery unavailable. {win.liquidation_reason}</p>}
               {unclaimed && <button className="orders-claim" type="button" onClick={() => onClaimUnclaimed(win)}>Claim prize <ArrowUpRightIcon size={17} /></button>}
               {wallet && win.liquidation_cash_usd != null && <p className="orders-detail">{formatMoney(win.liquidation_cash_usd)} added to your wallet.</p>}
               {delivery && (
@@ -39,7 +41,7 @@ export default function OrderTracker({ wins = [], onClaimUnclaimed }) {
                     </ol>
                   )}
                   <div className="orders-detail">
-                    {variants && <p>Variant: {variants}</p>}
+                    {variants && !win.order_selection && <p>Variant: {variants}</p>}
                     <p>{win.tracking_number ? <>Tracking number: <code>{win.tracking_number}</code></> : 'Tracking number pending.'}</p>
                   </div>
                 </>

@@ -9,6 +9,7 @@ import Footer from '@components/Footer';
 import Landing from '@pages/Landing';
 import Dashboard from '@pages/Dashboard';
 import Legal from '@pages/Legal';
+import Support from '@pages/Support';
 import AdminDashboard from '@pages/AdminDashboard';
 
 const INITIAL_PROFILE = { account_credits: 0.00, referral_balance: 0.00, isAdmin: false };
@@ -17,6 +18,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(INITIAL_PROFILE);
+  const [welcomeVisit, setWelcomeVisit] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
 
@@ -39,6 +41,7 @@ export default function App() {
   // 1. Auth Session Bootstrap & State Listener
   useEffect(() => {
     let isMounted = true;
+    let profileTimer;
 
     async function initAuth() {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -54,14 +57,16 @@ export default function App() {
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+      (event, newSession) => {
         if (!isMounted) return;
+        clearTimeout(profileTimer);
         setSession(newSession);
 
         if (newSession?.user) {
-          setIsAuthOpen(false);
-          await fetchUserProfile(newSession.user.id);
+          // Fetch after Supabase releases its auth session lock.
+          profileTimer = setTimeout(() => void fetchUserProfile(newSession.user.id), 0);
         } else if (event === 'SIGNED_OUT') {
+          setIsAuthOpen(false);
           setProfile(INITIAL_PROFILE);
           setIsWalletOpen(false);
         }
@@ -70,6 +75,7 @@ export default function App() {
 
     return () => {
       isMounted = false;
+      clearTimeout(profileTimer);
       subscription.unsubscribe();
     };
   }, [fetchUserProfile]);
@@ -123,7 +129,7 @@ export default function App() {
         currency={profile?.currency || 'NGN'}
         isAuthenticated={Boolean(session)}
         isAdmin={profile.isAdmin}
-        onOpenAuth={() => setIsAuthOpen(true)}
+        onOpenAuth={() => { setWelcomeVisit(null); setIsAuthOpen(true); }}
         onOpenWallet={() => setIsWalletOpen(true)}
         onSignOut={handleSignOut}
       />
@@ -135,7 +141,10 @@ export default function App() {
             session ? (
               <Navigate to="/dashboard" replace />
             ) : (
-              <Landing onUnlockWelcomeCredit={() => setIsAuthOpen(true)} />
+              <Landing onUnlockWelcomeCredit={(visitId) => {
+                setWelcomeVisit(typeof visitId === 'string' ? visitId : null);
+                setIsAuthOpen(true);
+              }} />
             )
           }
         />
@@ -170,12 +179,13 @@ export default function App() {
           }
         />
         <Route path="/legal" element={<Legal />} />
+        <Route path="/support" element={<Support email={session?.user?.email} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
       <Footer />
 
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      <AuthModal welcomeVisit={welcomeVisit} isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
 
       <CryptoWalletModal
         isOpen={isWalletOpen}

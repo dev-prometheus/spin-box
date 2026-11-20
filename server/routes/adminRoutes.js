@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { supabaseAdmin } from '../config/supabaseAdmin.js';
 import { sendShipmentEmail, sendWithdrawalCompletedEmail } from '../services/emailService.js';
 
+import { normalizePayoutHash, PayoutError, quoteWithdrawal, verifyWithdrawal } from '../services/withdrawalVerification.js';
+
 const router = Router();
 
 // Middleware: Verify Admin Access via Supabase JWT
@@ -71,7 +73,7 @@ router.get('/metrics', async (_req, res) => {
 const queues = [
   { path: 'links', table: 'temu_products', fields: 'id,title,product_url,price_usd,updated_at', order: 'updated_at' },
   { path: 'ugc', table: 'ugc_proof_submissions', fields: '*,users(email),game_spins(product_title,retail_value_usd,fulfillment_choice,shipping_status)', status: 'status', allowed: ['PENDING', 'APPROVED', 'REJECTED'] },
-  { path: 'fulfillment', table: 'game_spins', fields: 'id,product_title,retail_value_usd,product_attributes,shipping_details,tracking_number,shipping_status,created_at,users(email)', status: 'shipping_status', allowed: ['READY', 'PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
+  { path: 'fulfillment', table: 'game_spins', fields: 'id,product_title,retail_value_usd,order_selection,product_attributes,shipping_details,tracking_number,shipping_status,created_at,users(email)', status: 'shipping_status', allowed: ['READY', 'PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
   { path: 'withdrawals', table: 'withdrawals', fields: '*,users(email)', status: 'status', allowed: ['PENDING', 'PROCESSING', 'COMPLETED', 'REJECTED'] },
 ];
 
@@ -139,6 +141,23 @@ async function notify(row, sendEmail, details) {
   }
 }
 
+router.post('/fulfillment/unavailable', async (req, res) => {
+  const { spinId, reason } = req.body ?? {};
+  if (!uuid.test(spinId) || typeof reason !== 'string' || !reason.trim() || reason.length > 500) {
+    return res.status(400).json({ success: false, error: 'Enter the order and a reason.' });
+  }
+  try {
+    const { data, error } = await supabaseAdmin.rpc('pay_unavailable_spin', {
+      p_admin_id: req.adminUser.id, p_spin_id: spinId, p_reason: reason.trim(),
+    });
+    if (error?.code === 'P0002') return conflict(res);
+    if (error) throw error;
+    return res.json({ success: true, payoutUsd: data, audited: true });
+  } catch (error) {
+    return fail(res, error);
+  }
+});
+
 router.post('/fulfillment/dispatch', async (req, res) => {
   const { spinId } = req.body ?? {};
   const trackingNumber = typeof req.body?.trackingNumber === 'string' ? req.body.trackingNumber.trim() : '';
@@ -177,25 +196,50 @@ router.post('/fulfillment/deliver', async (req, res) => {
   }
 });
 
-router.post('/withdrawals/complete', async (req, res) => {
-  const { withdrawalId } = req.body ?? {};
-  const txHash = typeof req.body?.txHash === 'string' ? req.body.txHash.trim() : '';
-  if (!uuid.test(withdrawalId) || !/^[a-zA-Z0-9]{16,128}$/.test(txHash)) {
-    return res.status(400).json({ success: false, error: 'Enter a valid withdrawal and transaction hash.' });
-  }
-  try {
-    const { data, error } = await supabaseAdmin.from('withdrawals')
-      .update({ status: 'COMPLETED', tx_hash: txHash }).eq('id', withdrawalId)
-      .in('status', ['PENDING', 'PROCESSING'])
-      .select('id,amount_usd,asset,chain,users(email)').maybeSingle();
-    if (error) throw error;
-    if (!data) return conflict(res);
-    const audited = await recordAudit(req, 'COMPLETE_WITHDRAWAL', withdrawalId, { txHash, amountUsd: data.amount_usd });
-    await notify(data, sendWithdrawalCompletedEmail, { amountUsd: data.amount_usd, asset: data.asset, chain: data.chain, txHash });
-    return res.json({ success: true, audited });
-  } catch (error) {
-    return fail(res, error);
-  }
-});
+for (const action of ['prepare', 'complete', 'reject']) {
+  router.post('/withdrawals/' + action, async (req, res) => {
+    const { withdrawalId, txHash, reason } = req.body ?? {};
+    if (!uuid.test(withdrawalId) ||
+        (action === 'complete' && (typeof txHash !== 'string' || txHash.length > 128)) ||
+        (action === 'reject' && (typeof reason !== 'string' || !reason.trim() || reason.length > 500))) {
+      return res.status(400).json({ success: false, error: 'Enter valid withdrawal details.' });
+    }
+    try {
+      const { data: row, error: loadError } = await supabaseAdmin.from('withdrawals')
+        .select('*,users(email)').eq('id', withdrawalId).maybeSingle();
+      if (loadError) throw loadError;
+      if (!row) return conflict(res);
+      const params = { p_admin_id: req.adminUser.id, p_id: withdrawalId, p_action: action.toUpperCase() };
+
+      if (action === 'prepare' && row.status === 'PENDING') {
+        const { units, decimals } = await quoteWithdrawal(row);
+        Object.assign(params, { p_units: units, p_decimals: decimals });
+      } else if (action === 'complete') {
+        const hash = normalizePayoutHash(row.chain, txHash.trim());
+        if (row.status === 'PROCESSING') {
+          await verifyWithdrawal(row, hash);
+          Object.assign(params, { p_units: row.payout_units, p_decimals: row.payout_decimals });
+        }
+        params.p_tx_hash = hash;
+      } else if (action === 'reject') {
+        params.p_reason = reason.trim();
+      }
+
+      const { data, error } = await supabaseAdmin.rpc('settle_crypto_withdrawal', params);
+      if (error?.code === 'P0002') return conflict(res);
+      if (error?.code === '23505') return res.status(409).json({ success: false, error: error.message });
+      if (error) throw error;
+      if (action === 'complete' && data.changed) {
+        await notify(row, sendWithdrawalCompletedEmail, {
+          amountUsd: row.amount_usd, asset: row.asset, chain: row.chain, txHash: data.tx_hash,
+        });
+      }
+      return res.json({ success: true, audited: true });
+    } catch (error) {
+      if (error instanceof PayoutError) return res.status(422).json({ success: false, error: error.message });
+      return fail(res, error);
+    }
+  });
+}
 
 export default router;

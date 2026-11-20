@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { PackageIcon, TicketIcon, WalletIcon } from '@phosphor-icons/react';
 import { useCurrency } from '@/context/CurrencyContext';
 import { supabase } from '@services/supabaseClient';
+import { minimumStakeUsd } from '@services/stakeQuote';
+import { formatUsdAmount } from '@services/currency';
 import SpinWheel from '@components/SpinWheel';
 import TemuInspector from '@components/TemuInspector';
 import OrderTracker from '@components/OrderTracker';
@@ -30,8 +32,19 @@ export default function Dashboard({
   const [roundState, setRoundState] = useState('loading');
   const [stakeInput, setStakeInput] = useState('');
   const requestId = useRef(null);
-  const { formatMoney } = useCurrency();
+  const [variantId, setVariantId] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const { formatMoney, currency, hasRate } = useCurrency();
   const balance = Number(profile.account_credits);
+  const variants = selectedProduct?.variants ?? [];
+  const variant = variants.find((option) => option.id === variantId);
+  const total = variant ? Math.round(variant.priceUsd * 100) * quantity / 100 : null;
+  const previewPrice = variants.length ? Math.min(...variants.map((option) => option.priceUsd)) : null;
+  const priceVaries = variants.some((option) => option.priceUsd !== previewPrice);
+  const minimum = minimumStakeUsd(total ?? previewPrice);
+  const quoteMoney = (value) => currency !== 'USD' && hasRate
+    ? `${formatMoney(value)} (${formatUsdAmount(value, 'USD', null)})`
+    : formatMoney(value);
   const target = retryRound ? {
     title: retryRound.product_title,
     priceUsd: retryRound.retail_value_usd,
@@ -39,13 +52,11 @@ export default function Dashboard({
   } : selectedProduct ?? starterItem;
   const stake = retryRound ? Number(retryRound.stake_usd) : selectedProduct ? Number(stakeInput) : MIN_STAKE_USD;
   const validStake = retryRound || !selectedProduct || (
-    /^\d+(?:\.\d{1,2})?$/.test(stakeInput) && stake >= MIN_STAKE_USD && stake <= 99999999.99
+    /^\d+(?:\.\d{1,2})?$/.test(stakeInput) && total != null && stake >= minimum && stake <= 99999999.99
   );
-  const multiplier = stake >= 101 ? 7 : stake >= 5 ? 5 : 2;
-  const itemLocked = !retryRound && validStake && Math.round(stake * 100) * multiplier < Math.round(Number(target.priceUsd) * 100);
   const needsDeposit = !retryRound && validStake && stake > balance;
-  const amountCharged = validStake ? formatMoney(stake) : 'Enter stake';
-  const roundBlocked = roundState !== 'ready' || (!roundUncertain && (!validStake || needsDeposit || itemLocked));
+  const amountCharged = validStake ? quoteMoney(stake) : 'Enter stake';
+  const roundBlocked = roundState !== 'ready' || (!roundUncertain && (!validStake || needsDeposit));
   const pickLocked = roundBusy || roundUncertain || Boolean(retryRound) || roundState !== 'ready';
   const [wins, setWins] = useState([]);
   const [activeWinModal, setActiveWinModal] = useState(null);
@@ -126,7 +137,9 @@ export default function Dashboard({
         p_request_id: requestId.current,
         p_round_id: retryRound?.id ?? null,
         p_product_id: selectedProduct?.id ?? null,
-        p_expected_price_usd: Number(target.priceUsd),
+        p_expected_price_usd: total ?? Number(target.priceUsd),
+        p_variant_id: variant?.id ?? null,
+        p_quantity: variant ? quantity : 1,
         p_stake_usd: stake,
       });
       if (!error && data?.round && data?.spin_record) return data;
@@ -224,7 +237,10 @@ export default function Dashboard({
               onLoadingChange={setCheckingItem}
               onSelectProduct={(product) => {
                 setSelectedProduct(product);
-                setStakeInput('');
+                const only = product.variants?.length === 1 ? product.variants[0] : null;
+                setVariantId(only?.id ?? '');
+                setQuantity(1);
+                setStakeInput(only ? minimumStakeUsd(only.priceUsd).toFixed(2) : '');
                 setSpinStatus(null);
               }}
             />
@@ -236,7 +252,7 @@ export default function Dashboard({
               <div>
                 <p className="play-kicker">{retryRound ? 'Reserved for this round' : selectedProduct ? 'Selected item' : 'Starter item'}</p>
                 <h3>{target.title}</h3>
-                <p className="play-product-price">{formatMoney(Number(target.priceUsd))}</p>
+                <p className="play-product-price">{!retryRound && selectedProduct && !variant && priceVaries && 'From '}{quoteMoney(variant && !retryRound ? variant.priceUsd : !retryRound && previewPrice != null ? previewPrice : Number(target.priceUsd))}</p>
                 {selectedProduct && !retryRound && (
                   <button type="button" className="play-link" disabled={pickLocked || checkingItem} onClick={() => setSelectedProduct(null)}>
                     Use starter item
@@ -244,15 +260,46 @@ export default function Dashboard({
                 )}
               </div>
             </div>
+            {retryRound?.order_selection && <p>Quantity {retryRound.order_selection.quantity} · {Object.values(retryRound.order_selection.options ?? {}).join(' / ')}</p>}
+            {selectedProduct && !retryRound && variants.length > 0 && (
+              <div className="play-stake">
+                {variants.length > 1 && <>
+                  <label htmlFor="play-variant">Choose a product option</label>
+                  <select id="play-variant" value={variantId} disabled={pickLocked || checkingItem} onChange={(event) => {
+                    const next = variants.find((option) => option.id === event.target.value);
+                    setVariantId(next?.id ?? '');
+                    setQuantity(1);
+                    setStakeInput(next ? minimumStakeUsd(next.priceUsd).toFixed(2) : '');
+                  }}>
+                    <option value="">Select a size, color or style</option>
+                    {variants.map((option) => <option key={option.id} value={option.id}>
+                      {Object.entries(option.options).map(([name, value]) => `${name}: ${value}`).join(' / ')} · {quoteMoney(option.priceUsd)}
+                    </option>)}
+                  </select>
+                </>}
+                {variant && <>
+                  {variants.length === 1 && Object.entries(variant.options).map(([name, value]) => <p key={name}>{name}: {value}</p>)}
+                  <label htmlFor="play-quantity">Quantity</label>
+                  <select id="play-quantity" value={quantity} disabled={pickLocked || checkingItem} onChange={(event) => {
+                    const next = Number(event.target.value);
+                    setQuantity(next);
+                    setStakeInput(minimumStakeUsd(variant.priceUsd * next).toFixed(2));
+                  }}>
+                    {Array.from({ length: variant.maxQuantity }, (_, index) => <option key={index + 1}>{index + 1}</option>)}
+                  </select>
+                </>}
+              </div>
+            )}
             <div className="play-ticket">
               <TicketIcon size={22} weight="regular" />
               <div>
                 <h3>Round review</h3>
                 <dl>
-                  <div><dt>Item value</dt><dd>{formatMoney(Number(target.priceUsd))}</dd></div>
+                  <div><dt>Order value</dt><dd>{selectedProduct && !retryRound ? (total != null ? quoteMoney(total) : previewPrice != null ? `${priceVaries ? 'From ' : ''}${quoteMoney(previewPrice)}` : 'Unavailable') : quoteMoney(Number(target.priceUsd))}</dd></div>
+                  {minimum != null && !retryRound && <div><dt>Minimum stake</dt><dd>{!variant && priceVaries && 'From '}{quoteMoney(minimum)}</dd></div>}
                   <div><dt>{retryRound ? 'Reserved stake' : 'Stake'}</dt><dd>{amountCharged}</dd></div>
                 </dl>
-                {selectedProduct && !retryRound && (
+                {variant && !retryRound && (
                   <div className="play-stake">
                     <label htmlFor="play-stake">Enter stake in USD</label>
                     <input id="play-stake" type="text" inputMode="decimal" placeholder="1.00"
@@ -263,7 +310,8 @@ export default function Dashboard({
                 <p>{retryRound
                   ? 'Your next spin uses the stake already held for this item.'
                   : 'Win or lose, the stake is spent. If you land on Try again, you can spin for this item at no extra cost.'}</p>
-                {itemLocked && <p className="play-ticket-note">Enter a higher stake to play for this item.</p>}
+                {selectedProduct && !retryRound && !variants.length && <p className="play-ticket-note">We couldn’t verify an option and its available quantity. Try another item or check this link again.</p>}
+                {variant && !retryRound && <p className="play-ticket-note">A higher stake for this order changes the amount at risk. The odds and prize stay the same.</p>}
                 {needsDeposit && <p className="play-ticket-note">Add funds to play for this item.</p>}
               </div>
             </div>
@@ -276,7 +324,7 @@ export default function Dashboard({
               onRequestServerSpin={handleRequestServerSpin}
               onSpinResult={handleDashboardSpinComplete}
               onBusyChange={setRoundBusy}
-              buttonText={roundUncertain ? 'Check round result' : retryRound ? 'Spin again' : checkingItem ? 'Checking item…' : validStake ? `Stake ${amountCharged} and spin` : 'Enter a stake to spin'}
+              buttonText={roundUncertain ? 'Check round result' : retryRound ? 'Spin again' : checkingItem ? 'Checking item…' : validStake ? `Stake ${amountCharged} and spin` : !variant ? 'Choose a verified option' : 'Enter a valid stake'}
               disabled={Boolean(roundBlocked || checkingItem)}
             />
             {needsDeposit && !roundUncertain && (

@@ -6,14 +6,22 @@ import '@styles/components/AuthModal.css';
 
 const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
-export default function AuthModal({ isOpen, onClose }) {
-  return isOpen ? <AuthDialog onClose={onClose} /> : null;
+function readStorage(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
 }
 
-function AuthDialog({ onClose }) {
+export default function AuthModal({ isOpen, onClose, welcomeVisit }) {
+  return isOpen ? <AuthDialog onClose={onClose} welcomeVisit={welcomeVisit} /> : null;
+}
+
+function AuthDialog({ onClose, welcomeVisit }) {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
-  const [codeStep, setCodeStep] = useState(false);
+  const [mode, setMode] = useState(() => welcomeVisit || readStorage('spinbox_welcome_claim_visit') ? 'email' : 'password');
+  const [password, setPassword] = useState('');
+  const codeStep = mode === 'code';
+  const setup = mode === 'setup';
+  const passwordSignIn = mode === 'password';
   const [pending, setPending] = useState('');
   const [feedback, setFeedback] = useState(null);
   const dialogRef = useRef(null);
@@ -36,7 +44,7 @@ function AuthDialog({ onClose }) {
 
   useEffect(() => {
     fieldRef.current?.focus({ preventScroll: true });
-  }, [codeStep]);
+  }, [mode]);
 
   async function submit(action) {
     if (requestRef.current) return;
@@ -46,11 +54,29 @@ function AuthDialog({ onClose }) {
     setPending(action);
     setFeedback(null);
     try {
+      if (action === 'password' || action === 'setup') {
+        const { error } = action === 'setup'
+          ? await supabase.auth.updateUser({ password })
+          : await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (controller.signal.aborted) return;
+        if (error) {
+          setFeedback({ error: true, message: action === 'setup'
+            ? error.message
+            : 'Couldn’t sign in. Check your email and password or use an email code.' });
+          return;
+        }
+        onClose();
+        return;
+      }
+
       const body = {
         email: email.trim(),
-        referrerId: localStorage.getItem('spinbox_referrer') || null,
+        referrerId: readStorage('spinbox_referrer'),
       };
-      if (verify) body.token = code;
+      if (verify) {
+        body.token = code;
+        body.welcomeVisit = welcomeVisit || readStorage('spinbox_welcome_claim_visit');
+      }
 
       const response = await fetch(`${apiBase}/api/auth/${verify ? 'verify-otp' : 'send-otp'}`, {
         method: 'POST',
@@ -79,13 +105,22 @@ function AuthDialog({ onClose }) {
           setFeedback({ error: true, message: 'We couldn’t finish signing you in. Request a new code and try again.' });
           return;
         }
-        if (!controller.signal.aborted) onClose();
+        if (result.data.welcomeClaim) {
+          try {
+            localStorage.removeItem('spinbox_welcome_claim_visit');
+            localStorage.removeItem('spinbox_welcome_visit_v2');
+          } catch { /* Sign-in already succeeded. */ }
+        }
+        if (!controller.signal.aborted) {
+          setPassword('');
+          setMode('setup');
+        }
         return;
       }
 
       setEmail(body.email);
       setCode('');
-      setCodeStep(true);
+      setMode('code');
       if (action === 'resend') {
         setFeedback({ error: false, message: 'New code sent. Use the most recent email.' });
         fieldRef.current?.focus({ preventScroll: true });
@@ -100,14 +135,15 @@ function AuthDialog({ onClose }) {
     }
   }
 
-  function changeEmail() {
+  function changeMode(next) {
     setCode('');
+    setPassword('');
     setFeedback(null);
-    setCodeStep(false);
+    setMode(next);
   }
 
-  const title = codeStep ? 'Check your inbox.' : 'Sign in with email.';
-  const Illustration = codeStep ? KeyholeIcon : EnvelopeSimpleIcon;
+  const title = setup ? 'Set a password' : codeStep ? 'Check your inbox' : 'Sign in';
+  const Illustration = codeStep || setup || passwordSignIn ? KeyholeIcon : EnvelopeSimpleIcon;
 
   return (
     <dialog
@@ -117,35 +153,35 @@ function AuthDialog({ onClose }) {
       aria-describedby="auth-dialog-description"
       onCancel={(event) => {
         event.preventDefault();
-        onClose();
+        if (!pending) onClose();
       }}
     >
       <div className="tsb-auth-layout">
         <aside className="tsb-auth-ticket" aria-hidden="true">
           <Brand />
           <div className="tsb-auth-art"><Illustration size={78} weight="light" /></div>
-          <div className="tsb-auth-ticket-footer"><span>Email sign-in</span><span>0{codeStep ? 2 : 1} / 02</span></div>
+          <div className="tsb-auth-ticket-footer"><span>{setup ? 'Password setup' : 'Account access'}</span></div>
         </aside>
 
         <div className="tsb-auth-content">
           <div className="tsb-auth-top">
-            <p>Step {codeStep ? 2 : 1} of 2</p>
-            <button type="button" className="tsb-auth-close" onClick={onClose} aria-label="Close sign-in">
+            <p>{setup ? 'Email verified' : 'TemuSpinBox account'}</p>
+            <button type="button" className="tsb-auth-close" onClick={onClose} disabled={Boolean(pending)} aria-label="Close sign-in">
               <XIcon size={20} />
             </button>
           </div>
           <h2 id="auth-dialog-title">{title}</h2>
           <p id="auth-dialog-description" className="tsb-auth-description">
-            {codeStep
+            {setup ? 'Use this password next time you sign in.' : codeStep
               ? <>Enter the six-digit code we sent to <strong>{email}</strong>.</>
-              : 'We’ll send you a one-time code to continue.'}
+              : passwordSignIn ? 'Sign in with your email and password.' : 'We’ll send you a one-time code to continue.'}
           </p>
 
           <form onSubmit={(event) => {
             event.preventDefault();
-            void submit(codeStep ? 'verify' : 'send');
+            void submit(setup ? 'setup' : passwordSignIn ? 'password' : codeStep ? 'verify' : 'send');
           }}>
-            <label htmlFor="auth-field">{codeStep ? 'Verification code' : 'Email address'}</label>
+            {!setup && <><label htmlFor="auth-field">{codeStep ? 'Verification code' : 'Email address'}</label>
             {codeStep ? (
               <input
                 key="code"
@@ -176,7 +212,16 @@ function AuthDialog({ onClose }) {
                 readOnly={Boolean(pending)}
                 onChange={(event) => setEmail(event.target.value)}
               />
-            )}
+            )}</>}
+
+            {(setup || passwordSignIn) && <>
+              <label htmlFor="auth-password">{setup ? 'New password' : 'Password'}</label>
+              <input id="auth-password" ref={setup ? fieldRef : undefined} type="password"
+                autoComplete={setup ? 'new-password' : 'current-password'}
+                minLength={setup ? 8 : undefined} required readOnly={Boolean(pending)}
+                value={password} onChange={(event) => setPassword(event.target.value)} />
+              {setup && <p className="tsb-auth-description">Use at least 8 characters.</p>}
+            </>}
 
             {feedback && (
               <p className={feedback.error ? 'tsb-auth-feedback is-error' : 'tsb-auth-feedback'} role={feedback.error ? 'alert' : 'status'}>
@@ -185,14 +230,20 @@ function AuthDialog({ onClose }) {
             )}
 
             <button className="tsb-auth-submit" type="submit" disabled={Boolean(pending) || (codeStep && code.length !== 6)}>
-              {codeStep ? (pending === 'verify' ? 'Verifying…' : 'Verify and continue') : (pending === 'send' ? 'Sending…' : 'Send sign-in code')}
+              {pending ? 'Please wait…' : setup ? 'Save password' : passwordSignIn ? 'Sign in' : codeStep ? 'Verify and continue' : 'Send sign-in code'}
               <ArrowRightIcon size={18} />
             </button>
           </form>
 
+          {!codeStep && <div className="tsb-auth-recovery">
+            {setup ? <button type="button" disabled={Boolean(pending)} onClick={onClose}>Skip for now</button>
+              : passwordSignIn ? <button type="button" disabled={Boolean(pending)} onClick={() => changeMode('email')}>Use an email code or reset password</button>
+                : <button type="button" disabled={Boolean(pending)} onClick={() => changeMode('password')}>Sign in with a password</button>}
+          </div>}
+
           {codeStep && (
             <div className="tsb-auth-recovery">
-              <button type="button" disabled={Boolean(pending)} onClick={changeEmail}><ArrowLeftIcon size={15} /> Change email</button>
+              <button type="button" disabled={Boolean(pending)} onClick={() => changeMode('email')}><ArrowLeftIcon size={15} /> Change email</button>
               <button type="button" disabled={Boolean(pending)} onClick={() => void submit('resend')}>
                 {pending === 'resend' ? 'Sending…' : 'Resend code'}
               </button>

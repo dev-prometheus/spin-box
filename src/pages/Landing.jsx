@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { ArrowUpRightIcon, ArrowRightIcon, PackageIcon, WalletIcon, LinkSimpleIcon, ArrowClockwiseIcon, MinusIcon, PlusIcon, CheckIcon, GiftIcon, HeadphonesIcon, SneakerIcon, LampIcon } from '@phosphor-icons/react';
+import { ArrowUpRightIcon, ArrowRightIcon, PackageIcon, WalletIcon, LinkSimpleIcon, ArrowClockwiseIcon, MinusIcon, PlusIcon, CheckIcon, GiftIcon, XIcon, HeadphonesIcon, SneakerIcon, LampIcon } from '@phosphor-icons/react';
 import '@styles/pages/Landing.css';
 import WelcomeWheel from '@components/WelcomeWheel';
 import RevealIllustration from '@components/RevealIllustration';
@@ -23,6 +23,28 @@ const FAQS = [
 export default function Landing({ onUnlockWelcomeCredit }) {
   const { formatMoney, currency, hasRate, rateData, rateError } = useCurrency();
   const shippingMinimum = formatMoney(33);
+  const welcomeDialog = useRef(null);
+  function openWelcome() {
+    const dialog = welcomeDialog.current;
+    if (dialog && !dialog.open) dialog.showModal();
+  }
+
+  useEffect(() => {
+    function openFromLink(event) {
+      if (!event.target.closest?.('a[href="#welcome-game"]')) return;
+      event.preventDefault();
+      openWelcome();
+    }
+    document.addEventListener('click', openFromLink);
+    try {
+      if (!sessionStorage.getItem('spinbox_welcome_shown')) {
+        sessionStorage.setItem('spinbox_welcome_shown', '1');
+        openWelcome();
+      }
+    } catch { openWelcome(); }
+    return () => document.removeEventListener('click', openFromLink);
+  }, []);
+
   const [pick, setPick] = useState('tech');
   const picks = { tech: { icon: HeadphonesIcon, label: 'Tech', title: 'Headphones? A new gadget?', text: 'Bring the link to the actual item you want. No random mystery product.' }, style: { icon: SneakerIcon, label: 'Style', title: 'That pair you saved?', text: 'Choose the fashion item you want and check its available options in the app.' }, home: { icon: LampIcon, label: 'Home', title: 'Something for your space?', text: 'Paste your own Temu link. Product and delivery eligibility still apply.' } };
   const PickIcon = picks[pick].icon;
@@ -44,12 +66,24 @@ export default function Landing({ onUnlockWelcomeCredit }) {
         <div className="tsb-hero-copy">
           <p className="tsb-kicker"><GiftIcon size={18} /> New player offer</p>
           <h1 id="landing-title">Pick a Temu item.<br /><span>Spin for it.</span></h1>
-          <p className="tsb-lead">Try the welcome wheel for free. Eligible new accounts get {formatMoney(1)} in welcome credit to play for items worth up to {formatMoney(2)}.</p>
-          <a className="tsb-text-link" href="#how-it-works">How it works <ArrowRightIcon size={17} /></a>
+          <p className="tsb-lead">Try the welcome wheel for free. Eligible new players can win {formatMoney(1)} in welcome credit to play for items worth up to {formatMoney(2)}.</p>
+          <div className="tsb-actions"><button type="button" className="tsb-button" onClick={openWelcome}>Try your luck <ArrowUpRightIcon size={20} /></button>
+          <a className="tsb-text-link" href="#how-it-works">How it works <ArrowRightIcon size={17} /></a></div>
           <p className="tsb-risk">18+ only. You can lose money on paid spins.</p>
         </div>
-        <WelcomeWheel onClaim={onUnlockWelcomeCredit} />
+        <div className="tsb-hero-prize">
+          <img src="/images/wishlist-editorial.png" width="1122" height="1402" alt="Headphones, fashion and home items emerging from an open parcel" />
+        </div>
       </section>
+
+      <dialog className="tsb-welcome-dialog" ref={welcomeDialog} aria-labelledby="welcome-game-title">
+        <button type="button" className="tsb-welcome-close" aria-label="Close welcome wheel"
+          onClick={() => welcomeDialog.current?.close()}><XIcon size={22} /></button>
+        <WelcomeWheel onClaim={(visitId) => {
+          welcomeDialog.current?.close();
+          onUnlockWelcomeCredit(visitId);
+        }} />
+      </dialog>
 
       <section className="tsb-pick-playground tsb-wrap" aria-labelledby="pick-title"><div className="tsb-pick-intro"><p className="tsb-kicker">What would you spin for?</p><h2 id="pick-title">Play for something<br /><span>you actually want.</span></h2><div className="tsb-pick-buttons">{Object.entries(picks).map(([id, item]) => { const Icon = item.icon; return <button type="button" key={id} onClick={() => setPick(id)} aria-pressed={pick === id}><Icon size={21} />{item.label}</button>; })}</div><div className="tsb-pick-detail" aria-live="polite"><PickIcon size={28} /><h3>{picks[pick].title}</h3><p>{picks[pick].text}</p></div><button className="tsb-text-link" type="button" onClick={onUnlockWelcomeCredit}>Choose a product in the app <ArrowUpRightIcon size={17} /></button></div><figure className={`tsb-pick-art tsb-pick-art-${pick}`}><img src="/images/wishlist-editorial.png" width="1122" height="1402" alt="Illustrative collection of headphones, fashion and home items" loading="lazy" /><figcaption>Examples of items you might choose.</figcaption></figure></section>
 

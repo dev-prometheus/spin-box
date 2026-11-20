@@ -34,7 +34,7 @@ function getSections(tab, money) {
   ];
 
   if (tab === 'rules') return [
-    ['welcome', 'The welcome spin', <>Eligible new accounts receive {money(1)} in welcome credit after email verification. You can use it to play for eligible items worth up to {money(2)}. Paid rounds follow separate rules.</>],
+    ['welcome', 'The welcome spin', <>Eligible new players can win {money(1)} in welcome credit and claim it after email verification. You can use it to play for eligible items worth up to {money(2)}. Each free spin has a one-in-three chance of Win, Lose, or Try again. After a loss, you can try again on a return visit at least 30 minutes later. Paid rounds follow separate rules.</>],
     ['stake', 'Your stake', 'The wallet sets aside your stake when you start a paid round. A win or loss spends it. If you land on Try again, the stake stays reserved for the same item until the round ends.'],
     ['outcomes', 'The three outcomes', <dl className="tsb-legal-outcomes">
       <div><dt>Win item</dt><dd>You spend the stake and win the item. See the delivery and wallet payout options below.</dd></div>

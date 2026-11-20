@@ -1,9 +1,10 @@
+import { readTemuVariants } from './temuVariants.js';
 import crypto from 'node:crypto';
 import { ApifyClient } from 'apify-client';
 import { supabaseAdmin } from '../config/supabaseAdmin.js';
 import { scrapeWithStealth } from './stealthScraper.js';
 
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const CACHE_TTL_MS = 15 * 60 * 1000; // Match paid quote expiry.
 
 const FX_RATES_TO_USD = {
   USD: 1.0,
@@ -82,9 +83,9 @@ export async function canonicalizeTemuUrl(rawInput) {
     if (slugMatch) goodsId = slugMatch[1];
   }
 
-  const cleanUrl = goodsId ? `https://www.temu.com/-g-${goodsId}.html` : input;
+  const cleanUrl = goodsId && !isNigerian ? `https://www.temu.com/-g-${goodsId}.html` : input;
   const cacheKey = goodsId ? `temu_goods_${goodsId}` : parsed.pathname;
-  const urlHash = crypto.createHash('sha256').update(cacheKey).digest('hex');
+  const urlHash = crypto.createHash('sha256').update(isNigerian ? `NG:${cacheKey}` : cacheKey).digest('hex');
 
   return {
     targetUrl: cleanUrl,
@@ -137,13 +138,13 @@ export function evaluateDepositTier(priceUsd, userDepositBalance = 0, currency =
   };
 }
 
-async function scrapeViaApify({ targetUrl, goodsId }) {
+async function scrapeViaApify({ targetUrl, isNigerian }) {
   const token = process.env.APIFY_API_TOKEN;
   if (!token || token.startsWith('your-') || token === '<YOUR_API_TOKEN>') {
     return null;
   }
 
-  const cleanProductUrl = goodsId ? `https://www.temu.com/-g-${goodsId}.html` : targetUrl;
+  const cleanProductUrl = targetUrl;
   console.log(`[Apify] Dispatching run for: "${cleanProductUrl}"`);
 
   const client = new ApifyClient({ token });
@@ -153,7 +154,7 @@ async function scrapeViaApify({ targetUrl, goodsId }) {
       {
         startUrls: [{ url: cleanProductUrl }],
         maxItems: 1,
-        getProductDetails: false,
+        getProductDetails: true,
         extractReviews: false
       },
       { timeout: 35 }
@@ -179,7 +180,9 @@ async function scrapeViaApify({ targetUrl, goodsId }) {
       localPrice: numericAmount,
       localCurrency: currency,
       imageUrl: item.imageUrl || (Array.isArray(item.galleryImages) ? item.galleryImages[0] : ''),
-      inStock: true,
+      inStock: item.isAvailable !== false,
+      variants: item.detailError || (isNigerian && currency !== 'NGN')
+        ? [] : readTemuVariants(item, FX_RATES_TO_USD[item.currency?.toUpperCase()]),
       scrapedVia: 'apify-temu-scraper'
     };
   } catch (err) {
@@ -200,7 +203,7 @@ export async function inspectTemuProduct(rawUrl, userDepositBalance = 0) {
     .maybeSingle();
 
   const now = Date.now();
-  if (cached && now - new Date(cached.updated_at).getTime() < CACHE_TTL_MS) {
+  if (cached && Array.isArray(cached.verified_variants) && now - new Date(cached.updated_at).getTime() < CACHE_TTL_MS) {
     const currency = isNigerian ? 'NGN' : 'USD';
     const validation = evaluateDepositTier(Number(cached.price_usd), userDepositBalance, currency);
 
@@ -218,6 +221,7 @@ export async function inspectTemuProduct(rawUrl, userDepositBalance = 0) {
       currency,
       imageUrl: cached.image_url,
       inStock: cached.in_stock,
+      variants: cached.in_stock ? cached.verified_variants ?? [] : [],
       cached: true,
       validation
     };
@@ -236,8 +240,9 @@ export async function inspectTemuProduct(rawUrl, userDepositBalance = 0) {
   }
 
   // 3. Fallback to Apify (or primary for non-Nigerian links)
-  if (!scraped) {
-    scraped = await scrapeViaApify(normalized);
+  if (!scraped?.variants?.length) {
+    const detailed = await scrapeViaApify(normalized);
+    if (!scraped || detailed?.localCurrency === scraped.localCurrency) scraped = detailed ?? scraped;
   }
 
   // 4. Last resort stealth retry on clean URL
@@ -266,6 +271,7 @@ export async function inspectTemuProduct(rawUrl, userDepositBalance = 0) {
         price_usd: scraped.priceUsd,
         image_url: scraped.imageUrl,
         in_stock: scraped.inStock,
+        verified_variants: scraped.variants ?? [],
         scraped_via: scraped.scrapedVia,
         updated_at: new Date().toISOString()
       },
@@ -299,6 +305,7 @@ export async function inspectTemuProduct(rawUrl, userDepositBalance = 0) {
     currency: activeCurrency,
     imageUrl: savedRow.image_url,
     inStock: savedRow.in_stock,
+    variants: savedRow.in_stock ? savedRow.verified_variants ?? [] : [],
     cached: false,
     validation
   };

@@ -26,6 +26,7 @@ export default function FulfillmentModal({ winRecord, ...props }) {
 
 function ClaimDialog({ winRecord, onClose, onFulfillmentSuccess }) {
   const { formatMoney } = useCurrency();
+  const selection = winRecord.order_selection;
   const retail = Number(winRecord.retail_value_usd);
   const validRetail = winRecord.retail_value_usd != null && Number.isFinite(retail) && retail > 0;
   const canDeliver = validRetail && retail >= deliveryMinimum;
@@ -62,9 +63,9 @@ function ClaimDialog({ winRecord, onClose, onFulfillmentSuccess }) {
 
     const form = new FormData(event.currentTarget);
     const collect = (fields) => Object.fromEntries(fields.map(([key]) => [key, String(form.get(key) ?? '').trim()]));
-    const attributes = shippingClaim ? collect(productFields) : null;
+    const attributes = shippingClaim ? selection ?? collect(productFields) : null;
     const shipping = shippingClaim ? collect(deliveryFields) : null;
-    if (shippingClaim && [...productFields, ...deliveryFields].some(([key, , , required]) => required && !(attributes[key] || shipping[key]))) {
+    if (shippingClaim && [...(selection ? [] : productFields), ...deliveryFields].some(([key, , , required]) => required && !(attributes[key] || shipping[key]))) {
       setFeedback({ text: 'Fill in the required item options and delivery details.' });
       return;
     }
@@ -132,8 +133,10 @@ function ClaimDialog({ winRecord, onClose, onFulfillmentSuccess }) {
                   <div hidden={choice !== 'delivery'}>
                     <div className="claim-fields">
                       <h4>Item options</h4>
-                      <p className="claim-note">Enter N/A for size or style if it doesn’t apply.</p>
-                      <ClaimFields fields={productFields} active={choice === 'delivery'} />
+                      {selection ? <p className="claim-note">Quantity {selection.quantity} {Object.values(selection.options ?? {}).join(' / ')}</p> : <>
+                        <p className="claim-note">Enter N/A for size or style if it doesn’t apply.</p>
+                        <ClaimFields fields={productFields} active={choice === 'delivery'} />
+                      </>}
                       <h4>Delivery details</h4>
                       <ClaimFields fields={deliveryFields} active={choice === 'delivery'} />
                       <p className="claim-note">After submitting, you can check progress and tracking in Orders.</p>

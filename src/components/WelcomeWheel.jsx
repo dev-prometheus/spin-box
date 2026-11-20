@@ -4,21 +4,35 @@ import confetti from 'canvas-confetti';
 import { useCurrency } from '@/context/CurrencyContext';
 import '@styles/components/WelcomeWheel.css';
 
-const SEQUENCE = [0, 3, 1];
-const FILLS = ['#302b25', '#ff7057', '#ded1b9', '#302b25', '#d0ddb0', '#ded1b9'];
-const INKS = ['#f1eee7', '#28140e', '#302b25', '#f1eee7', '#273121', '#302b25'];
-const PROGRESS_KEY = 'spinbox_welcome_step_v1';
-function initialStep() {
-  try { const value = Number(localStorage.getItem(PROGRESS_KEY)); return Number.isInteger(value) && value >= 0 && value <= 3 ? value : 0; } catch { return 0; }
+const slices = ['RETRY', 'WIN', 'LOSE', 'RETRY', 'WIN', 'LOSE'];
+const labels = { RETRY: 'TRY AGAIN', WIN: 'WELCOME', LOSE: 'LOSE' };
+const messages = {
+  RETRY: 'Try again. Your next welcome spin is free.',
+  LOSE: 'No reward this visit. Come back later for another chance.',
+};
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const FILLS = ['#ffcd57', '#ff7d32', '#fff2ce', '#ffd67f', '#ffd1bb', '#fff2ce'];
+const INKS = Array(6).fill('#351706');
+const progressKey = 'spinbox_welcome_visit_v2';
+const returnAfterMs = 30 * 60 * 1000;
+function initialVisit() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(progressKey));
+    if (saved?.id && (saved.outcome !== 'LOSE' || Date.now() - saved.finishedAt < returnAfterMs)) return saved;
+  } catch { /* A new visit can still play. */ }
+  return { id: crypto.randomUUID(), attempt: 1 };
+}
+function saveVisit(visit) {
+  try { localStorage.setItem(progressKey, JSON.stringify(visit)); } catch { /* Storage is optional. */ }
 }
 function point(angle, radius) { const radians = angle * Math.PI / 180; return [250 + Math.cos(radians) * radius, 250 + Math.sin(radians) * radius]; }
 
 export default function WelcomeWheel({ onClaim }) {
   const { formatMoney } = useCurrency();
-  const [step, setStep] = useState(initialStep);
+  const [visit, setVisit] = useState(initialVisit);
   const [spinning, setSpinning] = useState(false);
   const [sound, setSound] = useState(false);
-  const [message, setMessage] = useState('No deposit needed for this welcome spin.');
+  const [message, setMessage] = useState(() => messages[visit.outcome] || 'No deposit needed for this welcome spin.');
   const disc = useRef(null);
   const angle = useRef(0);
   const frame = useRef(null);
@@ -26,7 +40,8 @@ export default function WelcomeWheel({ onClaim }) {
   const audio = useRef(null);
   const soundEnabled = useRef(false);
   const mounted = useRef(true);
-  const ready = step === 3;
+  const ready = visit.outcome === 'WIN';
+  const lost = visit.outcome === 'LOSE';
   const reward = formatMoney(1);
   const shortReward = reward.replace(/\s[A-Z]{3}$/, '');
 
@@ -64,10 +79,30 @@ export default function WelcomeWheel({ onClaim }) {
       } catch { /* Sound is optional. */ }
     }
   }
-  function spin() {
-    if (locked.current || ready) return;
+  async function spin() {
+    if (locked.current || ready || lost) return;
     locked.current = true; setSpinning(true); setMessage('Spinning your free welcome wheel…');
-    const index = SEQUENCE[step];
+    saveVisit(visit);
+    let outcome;
+    try {
+      const response = await fetch(`${apiBase}/api/auth/welcome-spin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visitId: visit.id, attempt: visit.attempt }),
+      });
+      const result = await response.json();
+      if (!response.ok || !slices.includes(result.outcome)) throw new Error('Spin unavailable');
+      outcome = result.outcome;
+    } catch {
+      if (mounted.current) {
+        setMessage('We couldn’t load your spin. Try again in a moment.');
+        setSpinning(false);
+        locked.current = false;
+      }
+      return;
+    }
+    if (!mounted.current) return;
+    const index = slices.indexOf(outcome);
     const current = angle.current;
     const base = -30 - index * 60;
     const difference = ((base - current) % 360 + 360) % 360;
@@ -84,38 +119,40 @@ export default function WelcomeWheel({ onClaim }) {
       if (disc.current) disc.current.style.transform = `rotate(${angle.current}deg)`;
       if (!reduced && Math.abs(angle.current - lastTick) >= 60) { tick(); lastTick = angle.current; }
       if (progress < 1) { frame.current = requestAnimationFrame(animate); return; }
-      const next = step + 1;
-      try {
-        localStorage.setItem(PROGRESS_KEY, String(next));
-        if (next === 3) localStorage.setItem('spinbox_pending_welcome_bonus', '1.00');
-      } catch { /* Progress still works in memory. */ }
-      setStep(next); setSpinning(false); locked.current = false;
-      setMessage(next === 3 ? 'Welcome reward ready. Verify your email to claim it.' : 'Try again. Your next welcome spin is free.');
-      if (next === 3 && !reduced) confetti({ particleCount: 45, spread: 55, origin: { y: 0.55 }, colors: ['#ff7057', '#f1eee7', '#d0ddb0'], disableForReducedMotion: true });
+      const next = { ...visit, outcome, attempt: visit.attempt + 1, finishedAt: Date.now() };
+      saveVisit(next);
+      setVisit(next);
+      setSpinning(false);
+      locked.current = false;
+      setMessage(messages[outcome] || '');
+      if (outcome === 'WIN' && !reduced) confetti({ particleCount: 45, spread: 55, origin: { y: 0.55 }, colors: ['#ff7057', '#f1eee7', '#d0ddb0'], disableForReducedMotion: true });
     }
     frame.current = requestAnimationFrame(animate);
   }
   return (
     <section className={`welcome-game${ready ? ' welcome-game-ready' : ''}`} id="welcome-game" aria-labelledby="welcome-game-title">
       <div className="welcome-game-top"><span><GiftIcon size={17} /> New player welcome</span><button type="button" className="welcome-sound" onClick={toggleSound} aria-pressed={sound} aria-label={sound ? 'Mute wheel sound' : 'Enable wheel sound'}>{sound ? <SpeakerHighIcon size={19} /> : <SpeakerSlashIcon size={19} />}</button></div>
-      <h2 id="welcome-game-title">{ready ? 'Your welcome reward' : 'Free welcome wheel'}</h2>
+      <h2 id="welcome-game-title">{ready ? 'Your welcome reward' : 'Try your luck'}</h2>
       <div className="welcome-wheel-shell">
         <div className="welcome-wheel-pointer" aria-hidden="true" />
         <svg className="welcome-wheel-disc" ref={disc} viewBox="0 0 500 500" aria-hidden="true">
-          <circle cx="250" cy="250" r="245" fill="#74634d" />
+          <circle cx="250" cy="250" r="245" fill="#e05016" />
           {FILLS.map((fill, index) => {
             const start = -90 + index * 60; const end = start + 60;
             const a = point(start, 232); const b = point(end, 232); const mid = start + 30; const center = point(mid, 162);
-            const label = index === 0 || index === 3 ? 'TRY AGAIN' : index === 1 || index === 4 ? 'WELCOME' : 'FREE SPIN';
-            return <g key={index}><path d={`M250 250 L${a.join(' ')} A232 232 0 0 1 ${b.join(' ')} Z`} fill={fill} stroke="#1b1918" strokeWidth="2" /><g transform={`translate(${center.join(' ')}) rotate(${mid + 90})`} fill={INKS[index]} textAnchor="middle" fontFamily="Outfit Variable, sans-serif" fontWeight="600"><text y={label === 'WELCOME' ? -8 : 5} fontSize="18">{label}</text>{label === 'WELCOME' && <text y="18" fontSize={shortReward.length > 14 ? 15 : 20}>{shortReward}</text>}</g></g>;
+            const label = labels[slices[index]];
+            return <g key={index}><path d={`M250 250 L${a.join(' ')} A232 232 0 0 1 ${b.join(' ')} Z`} fill={fill} stroke="#fff8ed" strokeWidth="2" /><g transform={`translate(${center.join(' ')}) rotate(${mid + 90})`} fill={INKS[index]} textAnchor="middle" fontFamily="Outfit Variable, sans-serif" fontWeight="600"><text y={label === 'WELCOME' ? -8 : 5} fontSize="18">{label}</text>{label === 'WELCOME' && <text y="18" fontSize={shortReward.length > 14 ? 15 : 20}>{shortReward}</text>}</g></g>;
           })}
-          <circle cx="250" cy="250" r="56" fill="#1b1918" stroke="#74634d" strokeWidth="3" />
+          <circle cx="250" cy="250" r="56" fill="#7c280c" stroke="#ffe1b7" strokeWidth="3" />
         </svg>
         <div className="welcome-wheel-hub" aria-hidden="true"><img src="/reveal-fold.svg" alt="" width="42" height="42" /></div>
       </div>
       <div className="welcome-reward-line"><span>{ready ? 'Ready to claim' : 'Welcome reward'}</span><strong>{reward}</strong></div>
       <p className="welcome-feedback" role="status" aria-live="polite">{ready ? 'Verify your email to claim your welcome reward.' : message}</p>
-      {ready ? <button type="button" className="tsb-button welcome-spin-button" onClick={onClaim}>Claim {reward} <ArrowUpRightIcon size={19} /></button> : <button type="button" className="tsb-button welcome-spin-button" onClick={spin} disabled={spinning}>{spinning ? 'Spinning…' : step ? 'Try again for free' : 'Spin for free'}<ArrowClockwiseIcon size={20} /></button>}
+      {ready ? <button type="button" className="tsb-button welcome-spin-button" onClick={() => {
+        try { localStorage.setItem('spinbox_welcome_claim_visit', visit.id); } catch { /* Auth can still open. */ }
+        onClaim(visit.id);
+      }}>Claim {reward} <ArrowUpRightIcon size={19} /></button> : !lost && <button type="button" className="tsb-button welcome-spin-button" onClick={spin} disabled={spinning}>{spinning ? 'Spinning…' : visit.outcome === 'RETRY' ? 'Try again for free' : 'Spin for free'}<ArrowClockwiseIcon size={20} /></button>}
       {ready && <p className="welcome-game-disclosure">For eligible new accounts. Use it on items worth up to {formatMoney(2)}.</p>}
     </section>
   );

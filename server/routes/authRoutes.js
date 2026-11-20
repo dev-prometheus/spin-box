@@ -16,6 +16,24 @@ function hashOtp(email, code) {
 }
 
 // 1. POST /api/auth/send-otp — Generate 6-digit OTP, store hash in public.email_otps, send via Resend
+const visitIdPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
+
+router.post('/welcome-spin', async (req, res) => {
+  const { visitId, attempt } = req.body ?? {};
+  if (typeof visitId !== 'string' || !visitIdPattern.test(visitId)
+      || !Number.isSafeInteger(attempt) || attempt < 1 || attempt > 2147483647) {
+    return res.status(400).json({ success: false });
+  }
+  const outcomes = ['WIN', 'LOSE', 'RETRY'];
+  const { data, error } = await supabaseAdmin.rpc('record_welcome_spin', {
+    p_visit: visitId,
+    p_attempt: attempt,
+    p_outcome: outcomes[crypto.randomInt(outcomes.length)]
+  });
+  if (error) return res.status(503).json({ success: false });
+  return res.json({ success: true, outcome: data });
+});
+
 router.post('/send-otp', async (req, res) => {
   try {
     const rawEmail = req.body?.email;
@@ -120,10 +138,11 @@ router.post('/verify-otp', async (req, res) => {
     }
 
     // Mark OTP as consumed atomically
-    await supabaseAdmin
-      .from('email_otps')
-      .update({ consumed: true })
-      .eq('id', otpRow.id);
+    const { data: consumed, error: consumeError } = await supabaseAdmin.from('email_otps')
+      .update({ consumed: true }).eq('id', otpRow.id).eq('consumed', false)
+      .gt('expires_at', new Date().toISOString()).select('id').maybeSingle();
+    if (consumeError) throw consumeError;
+    if (!consumed) return res.status(401).json({ success: false, error: 'Code already used or expired.' });
 
     const referrerToAttach = otpRow.referrer_id || fallbackRef;
 
@@ -147,11 +166,23 @@ router.post('/verify-otp', async (req, res) => {
       throw new Error(linkErr?.message || 'Failed to initialize authenticated session.');
     }
 
+    let welcomeClaim = null;
+    const { welcomeVisit } = req.body;
+    if (typeof welcomeVisit === 'string' && visitIdPattern.test(welcomeVisit)) {
+      const { data, error } = await supabaseAdmin.rpc('claim_welcome_spin', {
+        p_visit: welcomeVisit,
+        p_user: linkData.user.id
+      });
+      if (error) throw error;
+      welcomeClaim = data;
+    }
+
     return res.json({
       success: true,
       data: {
         email,
-        tokenHash: linkData.properties.hashed_token
+        tokenHash: linkData.properties.hashed_token,
+        welcomeClaim
       }
     });
   } catch (err) {

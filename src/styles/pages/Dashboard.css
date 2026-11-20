@@ -61,7 +61,7 @@
 
 .play-stake { display: grid; gap: 5px; margin-bottom: 10px; }
 .play-stake label { font-size: 14px; font-weight: 700; }
-.play-stake input {
+.play-stake input, .play-stake select {
   width: min(100%, 13rem);
   min-height: 44px;
   padding: 8px 10px;

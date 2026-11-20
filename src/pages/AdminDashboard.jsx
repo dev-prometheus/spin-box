@@ -8,7 +8,7 @@ const sections = {
   metrics: { title: 'Overview', description: 'See where work is waiting and open the relevant queue.' },
   ugc: { title: 'Proof review', description: 'Check the linked win and public post before deciding.', filters: ['PENDING', 'APPROVED', 'REJECTED'] },
   fulfillment: { title: 'Fulfillment', description: 'Record carrier tracking after dispatch and confirm delivery when verified.', filters: ['READY', 'PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
-  withdrawals: { title: 'Withdrawals', description: 'Record a transaction after verifying the transfer on the correct network.', filters: ['PENDING', 'PROCESSING', 'COMPLETED', 'REJECTED'] },
+  withdrawals: { title: 'Withdrawals', description: 'Prepare the exact crypto amount, verify a transfer, or refund an unpaid request.', filters: ['PENDING', 'PROCESSING', 'COMPLETED', 'REJECTED'] },
   links: { title: 'Product cache', description: 'Inspect saved product links and their recorded USD prices.' },
 };
 const statusLabel = {
@@ -184,6 +184,13 @@ function QueueRecord({ view, record, onOpen }) {
   );
 }
 
+function payoutAmount({ payout_units: units, payout_decimals: decimals, asset }) {
+  if (!units) return '';
+  if (!decimals) return `${units} ${asset}`;
+  const digits = units.padStart(decimals + 1, '0');
+  return `${digits.slice(0, -decimals)}.${digits.slice(-decimals)} ${asset}`;
+}
+
 function RecordDialog({ view, record, onClose, onFinish }) {
   const dialog = useRef(null);
   const locked = useRef(false);
@@ -193,7 +200,8 @@ function RecordDialog({ view, record, onClose, onFinish }) {
   const [error, setError] = useState('');
   const [uncertain, setUncertain] = useState(false);
   const canDispatch = ['PENDING', 'PROCESSING'].includes(record.shipping_status);
-  const canComplete = ['PENDING', 'PROCESSING'].includes(record.status);
+  const canPrepare = record.status === 'PENDING' && !record.tx_hash;
+  const canComplete = record.status === 'PROCESSING' && Boolean(record.payout_units);
 
   useEffect(() => {
     const element = dialog.current;
@@ -256,12 +264,19 @@ function RecordDialog({ view, record, onClose, onFinish }) {
         {view === 'fulfillment' && <>
           <div><dt>Recipient</dt><dd>{[record.shipping_details?.fullName, record.shipping_details?.phone].filter(Boolean).join(' · ') || 'Unavailable'}</dd></div>
           <div><dt>Address</dt><dd>{['streetAddress', 'city', 'stateProvince', 'postalCode', 'country'].map((key) => record.shipping_details?.[key]).filter(Boolean).join(', ') || 'Unavailable'}</dd></div>
-          <div><dt>Item options</dt><dd>{['size', 'color', 'customNotes'].map((key) => record.product_attributes?.[key]).filter(Boolean).join(' · ') || 'Unavailable'}</dd></div>
+          <div><dt>Item options</dt><dd>{record.order_selection ? Object.values(record.order_selection.options ?? {}).join(' · ') || 'Standard' : ['size', 'color', 'customNotes'].map((key) => record.product_attributes?.[key]).filter(Boolean).join(' · ') || 'Unavailable'}</dd></div>
+          {record.order_selection && <>
+            <div><dt>Quantity</dt><dd>{record.order_selection.quantity}</dd></div>
+            <div><dt>Temu SKU</dt><dd>{record.order_selection.variantId}</dd></div>
+            <div><dt>Product link</dt><dd><ExternalLink url={record.order_selection.url}>Open Temu listing</ExternalLink></dd></div>
+          </>}
           <div><dt>Tracking</dt><dd>{record.tracking_number || 'Pending'}</dd></div>
         </>}
         {view === 'withdrawals' && <>
           <div><dt>Source</dt><dd>{record.source_ledger === 'REFERRAL_BALANCE' ? 'Referral earnings' : record.source_ledger === 'ACCOUNT_CREDITS' ? 'Wallet balance' : 'Unavailable'}</dd></div>
           <div><dt>Destination</dt><dd>{record.destination_address || 'Unavailable'}</dd></div>
+          {record.payout_units && <div><dt>Exact crypto payout</dt><dd>{payoutAmount(record)}</dd></div>}
+          {record.rejection_reason && <div><dt>Refund reason</dt><dd>{record.rejection_reason}</dd></div>}
           {record.tx_hash && <div><dt>Transaction</dt><dd>{record.tx_hash}</dd></div>}
         </>}
       </dl>
@@ -271,14 +286,23 @@ function RecordDialog({ view, record, onClose, onFinish }) {
           <button type="button" className="ops-control" onClick={() => choose('approve')}>Review approval</button>
           <button type="button" className="ops-control" onClick={() => choose('reject')}>Review rejection</button>
         </>}
+        {view === 'fulfillment' && canDispatch && !record.tracking_number &&
+          <button type="button" className="ops-control" onClick={() => choose('unavailable')}>Order unavailable</button>}
         {view === 'fulfillment' && canDispatch && <button type="button" className="ops-control" onClick={() => choose('dispatch')}>Record dispatch</button>}
         {view === 'fulfillment' && record.shipping_status === 'SHIPPED' && <button type="button" className="ops-control" onClick={() => choose('deliver')}>Confirm delivery</button>}
-        {view === 'withdrawals' && canComplete && <button type="button" className="ops-control" onClick={() => choose('complete')}>Record completed transfer</button>}
+        {view === 'withdrawals' && canPrepare && <>
+          <button type="button" className="ops-control" onClick={() => choose('prepareWithdrawal')}>Prepare payout</button>
+          <button type="button" className="ops-control" onClick={() => choose('refundWithdrawal')}>Reject and refund</button>
+        </>}
+        {view === 'withdrawals' && canComplete && <button type="button" className="ops-control" onClick={() => choose('complete')}>Verify transfer</button>}
+        {view === 'withdrawals' && record.status === 'PROCESSING' && !canComplete && (
+          <p>This request was already processing before payout verification. Reconcile it against treasury records.</p>
+        )}
       </div>}
       {action && <form className="ops-decision" onSubmit={submit}>
         <p>{action.description}</p>
         {action.field && <label>{action.field}
-          {decision === 'reject'
+          {['reject', 'refundWithdrawal', 'unavailable'].includes(decision)
             ? <textarea required maxLength={500} value={input} onChange={(event) => setInput(event.target.value)} disabled={busy || uncertain} />
             : <input required minLength={decision === 'complete' ? 16 : 1} maxLength={decision === 'complete' ? 128 : 150} value={input}
               onChange={(event) => setInput(event.target.value)} disabled={busy || uncertain} />}
@@ -294,6 +318,9 @@ function RecordDialog({ view, record, onClose, onFinish }) {
 }
 
 const actions = {
+  unavailable: { path: 'fulfillment/unavailable', label: 'Pay 50% to wallet', success: 'Order paid out to the player’s wallet.',
+    field: 'Reason shown to the player', description: 'Use this when the exact order, including the full quantity, cannot be sent. This closes delivery and credits half the locked order value.',
+    payload: (id, reason) => ({ spinId: id, reason }) },
   approve: { path: 'ugc/moderate', label: 'Approve and credit reward', success: 'Proof approved and reward credited.',
     description: 'Confirm that the post matches the linked win. Approval credits the recorded reward.',
     payload: (id) => ({ submissionId: id, status: 'APPROVED' }) },
@@ -306,7 +333,13 @@ const actions = {
   deliver: { path: 'fulfillment/deliver', label: 'Mark as delivered', success: 'Order marked delivered.',
     description: 'Confirm delivery only after checking the carrier record.',
     payload: (id) => ({ spinId: id }) },
-  complete: { path: 'withdrawals/complete', label: 'Mark as completed', success: 'Withdrawal marked completed.',
-    field: 'Blockchain transaction hash', description: 'Verify the amount, asset, network and destination before recording the completed transfer.',
+  prepareWithdrawal: { path: 'withdrawals/prepare', label: 'Lock crypto amount', success: 'Payout prepared. Open Processing to see the exact crypto amount.',
+    description: 'Prepare before sending. This locks the amount and closes the refund option. Send the exact amount once from the configured treasury.',
+    payload: (id) => ({ withdrawalId: id }) },
+  refundWithdrawal: { path: 'withdrawals/reject', label: 'Reject and refund', success: 'Withdrawal rejected and the original balance restored.',
+    field: 'Reason', description: 'Use this only if the request has not been paid. The USD debit goes back to the original balance.',
+    payload: (id, reason) => ({ withdrawalId: id, reason }) },
+  complete: { path: 'withdrawals/complete', label: 'Verify and complete', success: 'Transfer verified and withdrawal completed.',
+    field: 'Blockchain transaction ID', description: 'Enter the transfer you already sent. The server checks the treasury, destination, asset and exact amount on the selected network.',
     payload: (id, txHash) => ({ withdrawalId: id, txHash }) },
 };
