@@ -90,7 +90,7 @@ export default function ReferralTree({ userId, referralBalance, totalTeam, teamS
           </div>
         </div>}
         {conversion === 'pending' && <p role="status">Moving earnings…</p>}
-        {!hasEarnings && conversion === 'idle' && <p>Available earnings will appear after a qualifying deposit generates commission.</p>}
+        {!hasEarnings && conversion === 'idle' && <p>Your referral earnings show here after someone in your referral network makes a confirmed deposit.</p>}
         {notice && <p className="benefit-feedback" role={conversion === 'uncertain' ? 'alert' : 'status'}>{notice}</p>}
       </div>
 

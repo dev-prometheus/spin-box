@@ -300,3 +300,14 @@ body:has(.tsb-welcome-dialog[open]) { overflow: hidden; }
 .tsb-landing:has(.tsb-welcome-dialog[open]) :is(.tsb-reveal-lid, .tsb-reveal-product) {
   animation-play-state: paused;
 }
+
+.tsb-quote-example {
+  max-width: 72ch;
+  margin-top: 24px;
+  padding: 14px 18px;
+  border-inline-start: 3px solid #dd6028;
+  border-radius: 8px;
+  background: #fff1dc;
+  color: #502608;
+  line-height: 1.6;
+}

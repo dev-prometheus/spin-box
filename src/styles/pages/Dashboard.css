@@ -97,3 +97,21 @@
   .play-board-retry { grid-template-columns: minmax(0, 1fr); }
   .play-board-retry .play-pick { grid-column: 1; grid-row: 2; }
 }
+
+.play-quote-entry { display: grid; gap: 12px; margin-top: 16px; }
+.play-entry-modes { display: flex; flex-wrap: wrap; gap: 8px; }
+.play-entry-modes [aria-pressed="true"] { background: #7b300c; color: #fff8ee; border-color: #7b300c; }
+.play-entry-modes [aria-pressed="true"]:hover:not(:disabled) { background: #632506; }
+.play-quote-entry .play-stake { justify-items: start; }
+.play-quote-reveal { padding: 9px 12px; border-radius: 10px; background: #fffaf0; color: #682d0c; }
+.play-quote-reveal p { margin: 4px 0 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .play-quote-reveal { animation: play-quote-in 220ms ease-out; }
+  @keyframes play-quote-in { from { opacity: 0; transform: translateY(4px); } }
+}
+
+.play-result[data-outcome="win"] { border-color: #537c4f; background: #edf7e9; }
+.play-result[data-outcome="lose"] { border-color: #a16353; background: #fff0eb; }
+.play-result[data-outcome="retry"] { border-color: #ba8226; background: #fff3cf; }
+.play-result svg { margin-right: 8px; vertical-align: middle; }
+.play-result button { margin-top: 10px; }

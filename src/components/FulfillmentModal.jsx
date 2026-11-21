@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRightIcon, PackageIcon, WalletIcon, XIcon } from '@phosphor-icons/react';
 import { useCurrency } from '@/context/CurrencyContext';
+import { DELIVERY_MINIMUM_USD, walletPrizeUsd } from '@services/fulfillment';
 import { supabase } from '@services/supabaseClient';
 import '@styles/components/FulfillmentModal.css';
 
-const deliveryMinimum = 33;
 const productFields = [
   ['size', 'Size', '', true],
   ['color', 'Color or style', '', true],
@@ -29,8 +29,8 @@ function ClaimDialog({ winRecord, onClose, onFulfillmentSuccess }) {
   const selection = winRecord.order_selection;
   const retail = Number(winRecord.retail_value_usd);
   const validRetail = winRecord.retail_value_usd != null && Number.isFinite(retail) && retail > 0;
-  const canDeliver = validRetail && retail >= deliveryMinimum;
-  const payout = Math.ceil(Math.round(retail * 100) / 2) / 100;
+  const canDeliver = validRetail && retail >= DELIVERY_MINIMUM_USD;
+  const payout = walletPrizeUsd(retail);
   const [choice, setChoice] = useState(canDeliver ? '' : 'wallet');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -114,6 +114,7 @@ function ClaimDialog({ winRecord, onClose, onFulfillmentSuccess }) {
           <p>Winning item</p>
           <h3>{winRecord.product_title || 'Temu item'}</h3>
           <strong>{validRetail ? formatMoney(retail) : 'Value unavailable'}</strong>
+          {selection && <p>Quantity {selection.quantity}{Object.entries(selection.options ?? {}).map(([label, value]) => ` · ${label}: ${value}`)}</p>}
         </aside>
         <section className="claim-task" aria-labelledby="claim-options">
           <h3 id="claim-options">Choose how to claim it</h3>
@@ -124,7 +125,7 @@ function ClaimDialog({ winRecord, onClose, onFulfillmentSuccess }) {
                   <WalletIcon size={20} /><span><strong>Wallet payout</strong><small>{formatMoney(payout)} · 50% of item value</small></span>
                 </button>
                 <button type="button" className="claim-control" aria-pressed={choice === 'delivery'} disabled={!canDeliver || busy || feedback?.uncertain} onClick={() => { setChoice('delivery'); setFeedback(null); }}>
-                  <PackageIcon size={20} /><span><strong>Delivery</strong><small>{canDeliver ? 'Receive the item' : `Available from ${formatMoney(deliveryMinimum)}`}</small></span>
+                  <PackageIcon size={20} /><span><strong>Delivery</strong><small>{canDeliver ? 'Receive the item' : `Available from ${formatMoney(DELIVERY_MINIMUM_USD)}`}</small></span>
                 </button>
               </div>
               <form onSubmit={submit} className="claim-form">
@@ -132,8 +133,8 @@ function ClaimDialog({ winRecord, onClose, onFulfillmentSuccess }) {
                   {choice === 'wallet' && <p className="claim-note">The payout goes to your TemuSpinBox wallet. You give up delivery of this item when you confirm.</p>}
                   <div hidden={choice !== 'delivery'}>
                     <div className="claim-fields">
-                      <h4>Item options</h4>
-                      {selection ? <p className="claim-note">Quantity {selection.quantity} {Object.values(selection.options ?? {}).join(' / ')}</p> : <>
+                      {!selection && <>
+                        <h4>Item options</h4>
                         <p className="claim-note">Enter N/A for size or style if it doesn’t apply.</p>
                         <ClaimFields fields={productFields} active={choice === 'delivery'} />
                       </>}

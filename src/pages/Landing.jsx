@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { ArrowUpRightIcon, ArrowRightIcon, PackageIcon, WalletIcon, LinkSimpleIcon, ArrowClockwiseIcon, MinusIcon, PlusIcon, CheckIcon, GiftIcon, XIcon } from '@phosphor-icons/react';
 import '@styles/pages/Landing.css';
 import WelcomeWheel from '@components/WelcomeWheel';
+import RecentActivity from '@components/RecentActivity';
 import LandingProductReview from '@components/LandingProductReview';
 import RevealIllustration from '@components/RevealIllustration';
 import { useCurrency } from '@/context/CurrencyContext';
@@ -12,15 +13,6 @@ const OUTCOMES = [
   { id: 'lose', label: 'Lose', title: 'You lose your stake.', text: 'The full stake is spent and the round ends.', detail: 'Only play with an amount you can afford to lose.', icon: MinusIcon },
   { id: 'retry', label: 'Try again', title: 'Spin again at no extra cost.', text: 'Your stake stays with the same item. You can pick up the round later.', detail: 'A retry is not a win or a promise of a later win.', icon: ArrowClockwiseIcon },
 ];
-const FAQS = [
-  ['Do I need to deposit to try it?', 'No. The welcome wheel is free to try.'],
-  ['What is TemuSpinBox?', 'An independent platform where you select a Temu product and spin for a chance to win it. A paid spin can cost money even if you don’t win. TemuSpinBox is not owned by or affiliated with Temu.'],
-  ['Can I choose the product?', 'Paste a Temu link above to check the item. Product verification and account eligibility determine which items you can play for.'],
-  ['What happens if I win?', 'You can request physical delivery for eligible items or choose 50% of the recorded product value as wallet money. The current physical-delivery threshold is $33 USD. Review the app’s rules for eligibility before participating.'],
-  ['Can I withdraw a wallet payout?', 'Open Wallet to request a transfer to an external crypto wallet. The minimum amount is shown there.'],
-  ['Who can participate?', 'You must be at least 18 and eligible to participate in your location. Read the rules before depositing or playing. Participation involves financial risk.'],
-];
-
 export default function Landing({ onUnlockWelcomeCredit }) {
   const { formatMoney, currency, hasRate, rateData, rateError } = useCurrency();
   const shippingMinimum = formatMoney(33);
@@ -49,7 +41,14 @@ export default function Landing({ onUnlockWelcomeCredit }) {
   const [outcome, setOutcome] = useState('win');
   const active = OUTCOMES.find((item) => item.id === outcome);
   const ActiveIcon = active.icon;
-  const faqs = FAQS.map(([question, answer]) => [question, answer.replace('$33 USD', shippingMinimum).replace('$1 USD', formatMoney(1)).replace('$2 USD', formatMoney(2))]);
+  const faqs = [
+    ['How much do I need to start?', `The welcome wheel is free. The minimum deposit is ${formatMoney(2)}. Paid spins start at ${formatMoney(1)}. You can start with your budget or a Temu item.`],
+    ['Can I play for any Temu item?', 'Paste a Temu link to check the item. We need to verify the price and availability of the exact option and quantity you choose. You’ll see if it’s eligible before you spin.'],
+    ['What are my chances of winning?', 'On each paid spin, there’s a 22% chance of winning the item, a 50% chance of losing your stake, and a 28% chance of getting another spin for the same item at no extra cost.'],
+    ['What if my item goes out of stock after I win?', 'If we can’t deliver your full order, you’ll get half the order value shown when you confirmed the spin. That amount goes into your TemuSpinBox wallet.'],
+    ['How do I withdraw my winnings?', `Open Wallet and choose Withdraw. Pick a supported crypto asset and network, enter your receiving wallet address, and submit your request. The minimum withdrawal is ${formatMoney(5)}.`],
+    ['When will my deposit or referral earnings show up?', 'Deposits show up after the network confirms the transfer and we credit it to your wallet. Referral earnings show up in Referrals after an eligible deposit from someone in your referral network is confirmed and credited.'],
+  ];
 
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get('ref');
@@ -105,13 +104,16 @@ export default function Landing({ onUnlockWelcomeCredit }) {
 
       <LandingProductReview onContinue={() => onUnlockWelcomeCredit()} />
 
+      <div className="tsb-wrap" style={{ marginBlockStart: 20 }}><RecentActivity /></div>
+
       <section id="how-it-works" className="tsb-section tsb-wrap" aria-labelledby="how-title">
-        <div className="tsb-section-heading"><p className="tsb-kicker">How it works</p><h2 id="how-title">Choose an item.<br /><span>Then spin for it.</span></h2><p>Use your welcome credit to play for eligible items worth up to {formatMoney(2)}.</p></div>
+        <div className="tsb-section-heading"><p className="tsb-kicker">How it works</p><h2 id="how-title">Two ways to play</h2><p>Start with your budget or the Temu item you want to win.</p></div>
         <div className="tsb-steps"><div className="tsb-step-thread" aria-hidden="true" />
-          <article><div className="tsb-step-top"><span>01</span><LinkSimpleIcon size={27} /></div><h3>Paste the link.</h3><p>Paste a Temu product link. The app checks the item’s details and price.</p></article>
-          <article><div className="tsb-step-top"><span>02</span><WalletIcon size={27} /></div><h3>Review your stake.</h3><p>Check the item value and how much you’re putting into the round.</p></article>
-          <article><div className="tsb-step-top"><span>03</span><ArrowClockwiseIcon size={27} /></div><h3>Spin the wheel.</h3><p>Win the item, lose your stake, or spin again using the same stake.</p></article>
+          <article><div className="tsb-step-top"><span>01</span><LinkSimpleIcon size={27} /></div><h3>Start with a budget</h3><p>Enter what you want to stake. You’ll see the price range for items you can choose before you spin.</p></article>
+          <article><div className="tsb-step-top"><span>02</span><WalletIcon size={27} /></div><h3>Or start with an item</h3><p>Paste its Temu link and choose the options and quantity. We’ll check the total and show what you can stake.</p></article>
+          <article><div className="tsb-step-top"><span>03</span><ArrowClockwiseIcon size={27} /></div><h3>Review and spin</h3><p>Confirm the item, its value, and your stake. On Try again, you spin for the same item without paying again.</p></article>
         </div>
+        <p className="tsb-quote-example"><strong>Example.</strong> If you stake {formatMoney(10)} and your quote shows {formatMoney(30)} to {formatMoney(40)}, you can choose an item in that range. If you win the {formatMoney(40)} item and choose cash, {formatMoney(20)} goes into your wallet.</p>
       </section>
 
       <section id="the-outcomes" className="tsb-outcomes" aria-labelledby="outcomes-title"><div className="tsb-wrap tsb-outcomes-grid">

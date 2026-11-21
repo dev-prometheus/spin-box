@@ -9,12 +9,17 @@ const stages = [
   ['DELIVERED', 'Delivered'],
 ];
 
-export default function OrderTracker({ wins = [], onClaimUnclaimed }) {
+export default function OrderTracker({ wins = [], status: loadStatus = 'ready', onRefresh, onClaimUnclaimed }) {
   const { formatMoney } = useCurrency();
   return (
     <section className="tsb-orders" aria-labelledby="orders-title">
-      <header><p>TemuSpinBox / Prizes</p><h2 id="orders-title">Orders</h2></header>
-      {wins.length === 0 && <p className="orders-empty"><PackageIcon size={23} /> Wins and claim updates will appear here.</p>}
+      <header>
+        <h2 id="orders-title">Orders</h2>
+        {onRefresh && <button className="orders-claim" type="button" onClick={onRefresh} disabled={loadStatus === 'loading'}>Refresh orders</button>}
+      </header>
+      {loadStatus === 'loading' && <p className="orders-detail" role="status">Checking your orders…</p>}
+      {loadStatus === 'error' && <p className="orders-detail" role="alert">Couldn’t refresh your orders. Try again.</p>}
+      {loadStatus === 'ready' && wins.length === 0 && <p className="orders-empty"><PackageIcon size={23} /> Wins and claim updates will appear here.</p>}
       <ul className="orders-list">
         {wins.map((win) => {
           const unclaimed = !win.fulfillment_choice;
@@ -27,7 +32,7 @@ export default function OrderTracker({ wins = [], onClaimUnclaimed }) {
             <li className="orders-item" key={win.id}>
               <div className="orders-item-heading">
                 <div><h3>{win.product_title || 'Temu item'}</h3><p>Item value {formatMoney(win.retail_value_usd)}</p></div>
-                <span className="orders-status">{status}</span>
+                <span className="orders-status" data-state={unclaimed ? 'claim' : wallet ? 'paid' : undefined}>{status}</span>
               </div>
               {win.order_selection && <p className="orders-detail">Quantity {win.order_selection.quantity} {Object.values(win.order_selection.options ?? {}).join(' / ')}</p>}
               {win.liquidation_reason && <p className="orders-detail">Delivery unavailable. {win.liquidation_reason}</p>}

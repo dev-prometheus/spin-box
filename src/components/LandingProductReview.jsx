@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { ArrowRightIcon, PackageIcon } from '@phosphor-icons/react';
 import TemuInspector from '@components/TemuInspector';
 import { useCurrency } from '@/context/CurrencyContext';
-import { minimumStakeUsd } from '@services/stakeQuote';
 
 export default function LandingProductReview({ onContinue }) {
   const { formatMoney } = useCurrency();
@@ -15,13 +14,12 @@ export default function LandingProductReview({ onContinue }) {
   const startingPrice = variants.length
     ? Math.min(...variants.map((option) => option.priceUsd))
     : product?.priceUsd;
-  const minimum = minimumStakeUsd(total ?? (variants.length ? startingPrice : null));
 
   return (
     <section className="tsb-product-review tsb-wrap" aria-labelledby="product-review-title">
       <div>
         <h2 id="product-review-title">What’s on your wishlist?</h2>
-        <p>Check the item price and see what you’d need to stake.</p>
+        <p>Check the item price, then sign in to see your stake range.</p>
       </div>
       <TemuInspector
         userDepositBalance={0}
@@ -71,14 +69,13 @@ export default function LandingProductReview({ onContinue }) {
               </>
             )}
             <div className="tsb-result-quote" aria-live="polite">
-              {minimum !== null ? (
+              {variants.length > 0 ? (
                 <dl>
                   <div><dt>{variant ? 'Item total' : 'Item total from'}</dt><dd>{formatMoney(total ?? startingPrice)}</dd></div>
-                  <div><dt>{variant ? 'Minimum stake' : 'Minimum stake from'}</dt><dd>{formatMoney(minimum)}</dd></div>
                 </dl>
-              ) : <p>{'There are no verified options available for this item.'}</p>}
+              ) : <p>There are no verified options available for this item.</p>}
             </div>
-            {variant && minimum !== null && <button type="button" className="tsb-text-link" onClick={onContinue}>Sign in to play <ArrowRightIcon size={18} /></button>}
+            {variant && variants.length > 0 && <button type="button" className="tsb-text-link" onClick={onContinue}>Sign in to play <ArrowRightIcon size={18} /></button>}
           </div>
         </div>
       )}

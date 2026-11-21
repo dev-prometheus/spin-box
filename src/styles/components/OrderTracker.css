@@ -20,3 +20,7 @@
 @media (max-width: 380px) {
   .orders-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+.tsb-orders > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.orders-status[data-state="claim"] { background: #ffedc6; color: #733813; }
+.orders-status[data-state="paid"] { background: #e7f5e5; color: #285635; }
