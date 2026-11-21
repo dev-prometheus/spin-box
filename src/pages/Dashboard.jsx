@@ -5,6 +5,7 @@ import { supabase } from '@services/supabaseClient';
 import { DELIVERY_MINIMUM_USD, walletPrizeUsd } from '@services/fulfillment';
 import { formatUsdAmount } from '@services/currency';
 import SpinWheel from '@components/SpinWheel';
+import RecentActivity from '@components/RecentActivity';
 import TemuInspector from '@components/TemuInspector';
 import OrderTracker from '@components/OrderTracker';
 import UgcProofCard from '@components/UgcProofCard';
@@ -450,6 +451,8 @@ export default function Dashboard({
 
         </div>
       </div>
+
+      <RecentActivity dashboard />
 
       <FulfillmentModal
         winRecord={activeWinModal}

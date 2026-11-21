@@ -104,7 +104,7 @@ export default function Landing({ onUnlockWelcomeCredit }) {
 
       <LandingProductReview onContinue={() => onUnlockWelcomeCredit()} />
 
-      <div className="tsb-wrap" style={{ marginBlockStart: 20 }}><RecentActivity /></div>
+      <RecentActivity />
 
       <section id="how-it-works" className="tsb-section tsb-wrap" aria-labelledby="how-title">
         <div className="tsb-section-heading"><p className="tsb-kicker">How it works</p><h2 id="how-title">Two ways to play</h2><p>Start with your budget or the Temu item you want to win.</p></div>
