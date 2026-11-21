@@ -162,3 +162,25 @@
 }
 .tsb-public-header .tsb-nav-start:hover { background: var(--brand-hover); }
 .tsb-brand .tsb-brand-accent { color: var(--brand-link); }
+
+.tsb-app-brand-group { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; min-width: 0; }
+.tsb-app-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 11px;
+  border: 1px solid #d89766;
+  border-radius: 10px;
+  background: #fff0d9;
+  color: #713008;
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.tsb-app-admin:hover { background: #ffdfad; }
+.tsb-app-admin[aria-current="page"] { background: #713008; border-color: #713008; color: #fff6e8; }
+@media (min-width: 1041px) and (max-width: 1140px) {
+  .tsb-app-nav:has(.tsb-app-admin) { column-gap: 8px; }
+  .tsb-app-nav:has(.tsb-app-admin) .tsb-app-links a { padding-inline: 6px; }
+}

@@ -40,7 +40,15 @@ export default function Navbar({ balance = 0, isAuthenticated = false, isAdmin =
       {isAuthenticated ? (
         <header className="tsb-app-header">
           <div className="tsb-app-nav">
-            <Link to="/dashboard" className="tsb-brand-link" aria-label="TemuSpinBox dashboard"><Brand /></Link>
+            <div className="tsb-app-brand-group">
+              <Link to="/dashboard" className="tsb-brand-link" aria-label="TemuSpinBox dashboard"><Brand /></Link>
+              {isAdmin && (
+                <Link to="/admin" className="tsb-app-admin" aria-current={pathname === '/admin' ? 'page' : undefined}>
+                  <ShieldCheckIcon size={18} aria-hidden="true" />
+                  Admin
+                </Link>
+              )}
+            </div>
             <nav className="tsb-app-links" aria-label="Player navigation">
               {dashboardLinks.map(([label, anchor, Icon]) => (
                 <Link key={label} to={`/dashboard${anchor}`}
@@ -55,7 +63,6 @@ export default function Navbar({ balance = 0, isAuthenticated = false, isAdmin =
               <button type="button" className="tsb-app-wallet" onClick={onOpenWallet} aria-label={`Open wallet, balance ${formattedBalance}`}>
                 <WalletIcon size={17} aria-hidden="true" /><span>{formattedBalance}</span>
               </button>
-              {isAdmin && <Link to="/admin" className="tsb-app-icon" aria-label="Admin control center" title="Admin control center"><ShieldCheckIcon size={19} /></Link>}
               <button type="button" className="tsb-app-icon" onClick={onSignOut} aria-label="Sign out" title="Sign out"><SignOutIcon size={19} /></button>
             </div>
           </div>
