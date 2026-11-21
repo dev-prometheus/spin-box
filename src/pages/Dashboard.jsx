@@ -219,19 +219,18 @@ export default function Dashboard({
         <header className="play-heading">
           <div>
             <p className="play-kicker">TemuSpinBox / Play</p>
-            <h1>Pick your item.</h1>
-            <p>Check the price and review the round before you spin.</p>
+            <h1>{retryRound ? 'Your retry is ready.' : 'Pick an item to play for.'}</h1>
+            <p>{retryRound ? 'Your item and stake are held for this spin.' : 'Use the starter item or paste a Temu link to check your stake.'}</p>
           </div>
           <button type="button" className="play-secondary" onClick={onOpenDeposit}>
             <WalletIcon size={18} /> Wallet <strong>{formatMoney(balance)}</strong>
           </button>
         </header>
 
-        <div className="play-board">
+        <div className={`play-board${retryRound ? ' play-board-retry' : ''}`}>
           <section className="play-pick" aria-labelledby="play-pick-heading">
-            <p className="play-kicker">01 / The item</p>
-            <h2 id="play-pick-heading">What are you playing for?</h2>
-            <TemuInspector
+            <h2 id="play-pick-heading">{retryRound ? 'Your reserved item' : 'Choose your item'}</h2>
+            {!retryRound && <TemuInspector
               userDepositBalance={balance}
               disabled={pickLocked}
               onLoadingChange={setCheckingItem}
@@ -243,14 +242,14 @@ export default function Dashboard({
                 setStakeInput(only ? minimumStakeUsd(only.priceUsd).toFixed(2) : '');
                 setSpinStatus(null);
               }}
-            />
+            />}
             <div className="play-product">
               <div className="play-product-image">
                 {target.imageUrl && <img key={target.imageUrl} src={target.imageUrl} alt="" onError={(event) => { event.currentTarget.hidden = true; }} />}
                 <PackageIcon size={42} weight="light" />
               </div>
               <div>
-                <p className="play-kicker">{retryRound ? 'Reserved for this round' : selectedProduct ? 'Selected item' : 'Starter item'}</p>
+                <p className="play-kicker">{selectedProduct || retryRound ? 'Item value' : 'Ready to play'}</p>
                 <h3>{target.title}</h3>
                 <p className="play-product-price">{!retryRound && selectedProduct && !variant && priceVaries && 'From '}{quoteMoney(variant && !retryRound ? variant.priceUsd : !retryRound && previewPrice != null ? previewPrice : Number(target.priceUsd))}</p>
                 {selectedProduct && !retryRound && (
@@ -260,7 +259,7 @@ export default function Dashboard({
                 )}
               </div>
             </div>
-            {retryRound?.order_selection && <p>Quantity {retryRound.order_selection.quantity} · {Object.values(retryRound.order_selection.options ?? {}).join(' / ')}</p>}
+            {retryRound?.order_selection && <p className="play-selection">{[`Quantity ${retryRound.order_selection.quantity}`, ...Object.values(retryRound.order_selection.options ?? {})].join(' · ')}</p>}
             {selectedProduct && !retryRound && variants.length > 0 && (
               <div className="play-stake">
                 {variants.length > 1 && <>
@@ -318,18 +317,16 @@ export default function Dashboard({
           </section>
 
           <section className="play-stage" aria-labelledby="play-stage-heading">
-            <p className="play-kicker">02 / The round</p>
-            <h2 id="play-stage-heading">Spin the wheel</h2>
+            <h2 id="play-stage-heading">{retryRound ? 'Spin again' : 'The wheel'}</h2>
+            {retryRound && <p className="play-stage-note">No additional stake required</p>}
             <SpinWheel
               onRequestServerSpin={handleRequestServerSpin}
               onSpinResult={handleDashboardSpinComplete}
               onBusyChange={setRoundBusy}
               buttonText={roundUncertain ? 'Check round result' : retryRound ? 'Spin again' : checkingItem ? 'Checking item…' : validStake ? `Stake ${amountCharged} and spin` : !variant ? 'Choose a verified option' : 'Enter a valid stake'}
               disabled={Boolean(roundBlocked || checkingItem)}
+              onAddFunds={needsDeposit && !roundUncertain && !checkingItem && !roundBusy && roundState === 'ready' ? onOpenDeposit : undefined}
             />
-            {needsDeposit && !roundUncertain && (
-              <button type="button" className="play-secondary play-add" onClick={onOpenDeposit}>Add funds</button>
-            )}
             {roundState === 'loading' && <p role="status">Checking for an open round…</p>}
             {roundState === 'error' && (
               <button type="button" className="play-secondary play-add" onClick={() => window.location.reload()}>Reload to check your round</button>

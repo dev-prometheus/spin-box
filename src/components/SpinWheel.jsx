@@ -8,7 +8,7 @@ const outcomes = [
   { id: 'LOSE', label: 'Lose' },
 ];
 
-export default function SpinWheel({ onRequestServerSpin, onSpinResult, onBusyChange, buttonText, disabled }) {
+export default function SpinWheel({ onRequestServerSpin, onSpinResult, onBusyChange, buttonText, disabled, onAddFunds }) {
   const disc = useRef(null);
   const animation = useRef(null);
   const rotation = useRef(0);
@@ -75,8 +75,8 @@ export default function SpinWheel({ onRequestServerSpin, onSpinResult, onBusyCha
         <div className="play-wheel-hub"><img src="/favicon.svg" width="40" height="40" alt="" /></div>
       </div>
       <p className="play-wheel-caption">Wheel segments illustrate outcomes. They don’t show the odds.</p>
-      <button type="button" onClick={spin} disabled={disabled || Boolean(phase)} className="play-primary">
-        {phase || buttonText}<ArrowClockwiseIcon size={18} />
+      <button type="button" onClick={onAddFunds ?? spin} disabled={(!onAddFunds && disabled) || Boolean(phase)} className="play-primary">
+        {phase || (onAddFunds ? 'Add funds' : buttonText)}{!onAddFunds && <ArrowClockwiseIcon size={18} />}
       </button>
       <span className="play-sr-only" role="status">{phase}</span>
     </div>

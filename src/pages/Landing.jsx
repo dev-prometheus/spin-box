@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { ArrowUpRightIcon, ArrowRightIcon, PackageIcon, WalletIcon, LinkSimpleIcon, ArrowClockwiseIcon, MinusIcon, PlusIcon, CheckIcon, GiftIcon, XIcon, HeadphonesIcon, SneakerIcon, LampIcon } from '@phosphor-icons/react';
+import { ArrowUpRightIcon, ArrowRightIcon, PackageIcon, WalletIcon, LinkSimpleIcon, ArrowClockwiseIcon, MinusIcon, PlusIcon, CheckIcon, GiftIcon, XIcon } from '@phosphor-icons/react';
 import '@styles/pages/Landing.css';
 import WelcomeWheel from '@components/WelcomeWheel';
+import LandingProductReview from '@components/LandingProductReview';
 import RevealIllustration from '@components/RevealIllustration';
 import { useCurrency } from '@/context/CurrencyContext';
 
@@ -14,7 +15,7 @@ const OUTCOMES = [
 const FAQS = [
   ['Do I need to deposit to try it?', 'No. The welcome wheel is free to try.'],
   ['What is TemuSpinBox?', 'An independent platform where you select a Temu product and spin for a chance to win it. A paid spin can cost money even if you don’t win. TemuSpinBox is not owned by or affiliated with Temu.'],
-  ['Can I choose the product?', 'You can paste a Temu product link in the app. Product verification and eligibility determine which items are available for your account. The products on this page are illustrations, not live listings.'],
+  ['Can I choose the product?', 'Paste a Temu link above to check the item. Product verification and account eligibility determine which items you can play for.'],
   ['What happens if I win?', 'You can request physical delivery for eligible items or choose 50% of the recorded product value as wallet money. The current physical-delivery threshold is $33 USD. Review the app’s rules for eligibility before participating.'],
   ['Can I withdraw a wallet payout?', 'Open Wallet to request a transfer to an external crypto wallet. The minimum amount is shown there.'],
   ['Who can participate?', 'You must be at least 18 and eligible to participate in your location. Read the rules before depositing or playing. Participation involves financial risk.'],
@@ -45,9 +46,6 @@ export default function Landing({ onUnlockWelcomeCredit }) {
     return () => document.removeEventListener('click', openFromLink);
   }, []);
 
-  const [pick, setPick] = useState('tech');
-  const picks = { tech: { icon: HeadphonesIcon, label: 'Tech', title: 'Headphones? A new gadget?', text: 'Bring the link to the actual item you want. No random mystery product.' }, style: { icon: SneakerIcon, label: 'Style', title: 'That pair you saved?', text: 'Choose the fashion item you want and check its available options in the app.' }, home: { icon: LampIcon, label: 'Home', title: 'Something for your space?', text: 'Paste your own Temu link. Product and delivery eligibility still apply.' } };
-  const PickIcon = picks[pick].icon;
   const [outcome, setOutcome] = useState('win');
   const active = OUTCOMES.find((item) => item.id === outcome);
   const ActiveIcon = active.icon;
@@ -67,12 +65,32 @@ export default function Landing({ onUnlockWelcomeCredit }) {
           <p className="tsb-kicker"><GiftIcon size={18} /> New player offer</p>
           <h1 id="landing-title">Pick a Temu item.<br /><span>Spin for it.</span></h1>
           <p className="tsb-lead">Try the welcome wheel for free. Eligible new players can win {formatMoney(1)} in welcome credit to play for items worth up to {formatMoney(2)}.</p>
-          <div className="tsb-actions"><button type="button" className="tsb-button" onClick={openWelcome}>Try your luck <ArrowUpRightIcon size={20} /></button>
+          <div className="tsb-actions"><button type="button" className="tsb-button tsb-hero-spin" aria-haspopup="dialog" onClick={openWelcome}>Spin for free <ArrowClockwiseIcon size={24} weight="bold" /></button>
           <a className="tsb-text-link" href="#how-it-works">How it works <ArrowRightIcon size={17} /></a></div>
           <p className="tsb-risk">18+ only. You can lose money on paid spins.</p>
         </div>
-        <div className="tsb-hero-prize">
-          <img src="/images/wishlist-editorial.png" width="1122" height="1402" alt="Headphones, fashion and home items emerging from an open parcel" />
+        <div className="tsb-hero-reveal" aria-hidden="true">
+          <svg viewBox="0 0 400 275" focusable="false">
+            <ellipse cx="202" cy="238" rx="124" ry="17" fill="#b74210" opacity=".19" />
+            <circle cx="201" cy="127" r="104" fill="#fff5b8" />
+            <path d="m87 96 9 16 17 8-17 8-9 16-8-16-17-8 17-8Zm226-51 5 11 11 5-11 5-5 11-5-11-11-5 11-5Z" fill="#fffdf5" />
+            <path d="m100 56 18 7m174 63 23-8m-13 29 14 5" fill="none" stroke="#eb520f" strokeWidth="6" strokeLinecap="round" />
+            <path d="m104 167 96-31 95 31-95 45Z" fill="#802707" />
+            <g className="tsb-reveal-product" transform="translate(201 116)">
+              <g transform="rotate(13)">
+                <path d="M-49 16V2a49 49 0 0 1 98 0v14" fill="none" stroke="#361d45" strokeWidth="15" />
+                <path d="M-46-2a46 46 0 0 1 92 0" fill="none" stroke="#9671d7" strokeWidth="6" />
+                <rect x="-59" y="3" width="29" height="49" rx="12" fill="#6743a5" />
+                <rect x="30" y="3" width="29" height="49" rx="12" fill="#6743a5" />
+                <rect x="-40" y="6" width="14" height="43" rx="7" fill="#361d45" />
+                <rect x="26" y="6" width="14" height="43" rx="7" fill="#361d45" />
+              </g>
+            </g>
+            <path d="m104 167 96 34v55l-96-38Z" fill="#ff7226" />
+            <path d="m200 201 95-34v51l-95 38Z" fill="#cf3e0a" />
+            <path d="m104 167 96 34-22 21-94-38Zm96 34 95-34 21 17-96 38Z" fill="#ff9c45" />
+            <path className="tsb-reveal-lid" d="m108 94 29-49 117-24 24 15-68 70Z" fill="#f35413" />
+          </svg>
         </div>
       </section>
 
@@ -85,7 +103,7 @@ export default function Landing({ onUnlockWelcomeCredit }) {
         }} />
       </dialog>
 
-      <section className="tsb-pick-playground tsb-wrap" aria-labelledby="pick-title"><div className="tsb-pick-intro"><p className="tsb-kicker">What would you spin for?</p><h2 id="pick-title">Play for something<br /><span>you actually want.</span></h2><div className="tsb-pick-buttons">{Object.entries(picks).map(([id, item]) => { const Icon = item.icon; return <button type="button" key={id} onClick={() => setPick(id)} aria-pressed={pick === id}><Icon size={21} />{item.label}</button>; })}</div><div className="tsb-pick-detail" aria-live="polite"><PickIcon size={28} /><h3>{picks[pick].title}</h3><p>{picks[pick].text}</p></div><button className="tsb-text-link" type="button" onClick={onUnlockWelcomeCredit}>Choose a product in the app <ArrowUpRightIcon size={17} /></button></div><figure className={`tsb-pick-art tsb-pick-art-${pick}`}><PickIcon size={120} weight="duotone" aria-hidden="true" /></figure></section>
+      <LandingProductReview onContinue={() => onUnlockWelcomeCredit()} />
 
       <section id="how-it-works" className="tsb-section tsb-wrap" aria-labelledby="how-title">
         <div className="tsb-section-heading"><p className="tsb-kicker">How it works</p><h2 id="how-title">Choose an item.<br /><span>Then spin for it.</span></h2><p>Use your welcome credit to play for eligible items worth up to {formatMoney(2)}.</p></div>

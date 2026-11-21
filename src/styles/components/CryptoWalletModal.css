@@ -67,3 +67,31 @@
   .wallet-balances, .wallet-modes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wallet-balances { margin-bottom: 10px; }
 }
+
+.tsb-wallet { width: min(510px, calc(100% - 24px)); max-height: calc(100dvh - 24px); }
+.wallet-heading { align-items: center; padding: 12px 18px; }
+.wallet-heading h2 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 27px; }
+.wallet-heading h2 svg { color: var(--brand-link); }
+.wallet-close { border-radius: 50%; }
+.wallet-body { display: block; }
+.wallet-sidebar { padding: 12px 18px 0; background: transparent; }
+.wallet-balances { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.wallet-balances > div { padding: 9px 12px; border: 1px solid #efcfae; border-radius: 12px; background: #fff0dc; }
+.wallet-balances dd { font-size: clamp(15px, 3.8vw, 19px); }
+.wallet-balances .wallet-usd { display: block; }
+.wallet-fx-note { margin: 7px 0 0; }
+.wallet-modes { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 12px; padding: 4px; border-radius: 14px; background: #f5e8d7; }
+.wallet-modes .wallet-control { justify-content: center; border: 1px solid transparent; border-radius: 10px; }
+.wallet-modes .wallet-control[aria-pressed="true"] { color: #6d280b; background: #fffaf2; border-color: #e6ba91; box-shadow: 0 1px 2px #71351320; }
+.wallet-task { padding: 14px 18px 18px; }
+.wallet-task input, .wallet-task select, .wallet-primary { border-radius: 10px; }
+.wallet-task fieldset label { margin-top: 8px; }
+.wallet-amount-entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+.wallet-amount-entry select { width: auto; }
+.wallet-amount-entry > span { padding-inline: 8px; font-weight: 700; }
+.wallet-note { font-size: 13px; }
+.wallet-address { padding: 12px; border: 1px solid #efcfae; border-radius: 12px; }
+.wallet-address .wallet-primary { justify-content: center; width: 100%; margin-top: 4px; }
+.wallet-primary:not(:disabled) { box-shadow: 0 3px 0 #a63b12; }
+.wallet-primary:active:not(:disabled) { box-shadow: none; translate: 0 3px; }
+.wallet-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

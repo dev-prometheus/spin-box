@@ -56,6 +56,8 @@ function WalletDialog({ userId, profile, onClose, onBalancesUpdated, uncertain, 
   }
   const balance = Number(source === 'ACCOUNT_CREDITS' ? profile.account_credits : profile.referral_balance);
 
+  const belowMinimum = balance < minWithdrawalUsd;
+
   useEffect(() => {
     const element = dialog.current;
     const opener = document.activeElement;
@@ -118,13 +120,12 @@ function WalletDialog({ userId, profile, onClose, onBalancesUpdated, uncertain, 
       onCancel={(event) => { event.preventDefault(); close(); }}>
       <header className="wallet-heading">
         <div>
-          <p><WalletIcon size={17} /> TemuSpinBox / Funds</p>
-          <h2 id="wallet-title">Your wallet</h2>
+          <h2 id="wallet-title"><WalletIcon size={23} /> Your wallet</h2>
         </div>
         <button type="button" className="wallet-control wallet-close" aria-label="Close wallet" onClick={close} disabled={busy}><XIcon size={20} /></button>
       </header>
       <div className="wallet-body">
-        <aside className="wallet-sidebar">
+        <div className="wallet-sidebar">
           <dl className="wallet-balances">
             <div><dt>Wallet balance</dt><dd>{walletAmount(profile.account_credits)}</dd></div>
             <div><dt>Referral earnings</dt><dd>{walletAmount(profile.referral_balance)}</dd></div>
@@ -134,9 +135,9 @@ function WalletDialog({ userId, profile, onClose, onBalancesUpdated, uncertain, 
             <button type="button" className="wallet-control" aria-pressed={mode === 'deposit'} disabled={busy} onClick={() => setMode('deposit')}><ArrowDownLeftIcon size={18} /> Deposit</button>
             <button type="button" className="wallet-control" aria-pressed={mode === 'withdraw'} disabled={busy} onClick={() => setMode('withdraw')}><ArrowUpRightIcon size={18} /> Withdraw</button>
           </div>
-        </aside>
+        </div>
         <section className="wallet-task" aria-labelledby="wallet-task-title">
-          <h3 id="wallet-task-title">{mode === 'deposit' ? 'Add funds' : 'Request a withdrawal'}</h3>
+          <h3 id="wallet-task-title" className="wallet-visually-hidden">{mode === 'deposit' ? 'Add funds' : 'Request a withdrawal'}</h3>
           <label htmlFor="wallet-asset">Asset and network</label>
           <select id="wallet-asset" value={asset.id} disabled={busy} onChange={(event) => {
             setAsset(assets.find((item) => item.id === event.target.value));
@@ -160,24 +161,26 @@ function WalletDialog({ userId, profile, onClose, onBalancesUpdated, uncertain, 
                   <input id="wallet-destination" type="text" value={destination} required minLength={20} autoComplete="off" spellCheck={false}
                     onChange={(event) => setDestination(event.target.value)} aria-describedby="wallet-network-note" />
                   <p id="wallet-network-note" className="wallet-note">The receiving wallet must support {asset.asset} on {asset.network}.</p>
-                  {ngnRate && <>
-                    <label htmlFor="wallet-entry-currency">Enter amount in</label>
-                    <select id="wallet-entry-currency" value={entryCurrency} onChange={(event) => {
-                      setEntryCurrency(event.target.value);
-                      setAmount('');
-                    }}>
-                      <option value="NGN">Nigerian naira (NGN)</option>
-                      <option value="USD">US dollars (USD)</option>
-                    </select>
-                  </>}
-                  <label htmlFor="wallet-amount">Amount in {entryCurrency}</label>
-                  <input id="wallet-amount" type="number" min={entryCurrency === 'USD' ? minWithdrawalUsd : 0.01} step="0.01" required inputMode="decimal"
-                    value={amount} onChange={(event) => setAmount(event.target.value)} aria-describedby="wallet-amount-note" />
+                  <label htmlFor="wallet-amount">Withdrawal amount</label>
+                  <div className="wallet-amount-entry">
+                    <input id="wallet-amount" type="number" min={entryCurrency === 'USD' ? minWithdrawalUsd : 0.01} step="0.01" required inputMode="decimal"
+                      placeholder="0.00" value={amount} onChange={(event) => setAmount(event.target.value)} aria-describedby="wallet-amount-note" />
+                    {ngnRate ? (
+                      <select id="wallet-entry-currency" aria-label="Amount currency" value={entryCurrency} onChange={(event) => {
+                        setEntryCurrency(event.target.value);
+                        setAmount('');
+                      }}>
+                        <option value="NGN">NGN</option>
+                        <option value="USD">USD</option>
+                      </select>
+                    ) : <span>USD</span>}
+                  </div>
                   <p id="wallet-amount-note" className="wallet-note">
                     Minimum {walletAmount(minWithdrawalUsd, limitCurrency)}.<br />Available {walletAmount(balance, limitCurrency)}.
                     {Number.isFinite(amountUsd) && amountUsd > 0 && <><br />Wallet debit <strong>{formatUsdAmount(amountUsd, 'USD', null)}</strong>.</>}
                   </p>
-                  <button type="submit" className="wallet-primary">{busy ? 'Submitting…' : 'Request withdrawal'}<ArrowUpRightIcon size={18} /></button>
+                  {belowMinimum && <p className="wallet-note">This balance is below the withdrawal minimum. {source === 'REFERRAL_BALANCE' ? 'Check your wallet balance.' : 'Switch balances or deposit funds.'}</p>}
+                  <button type="submit" className="wallet-primary" disabled={belowMinimum}>{busy ? 'Submitting…' : 'Request withdrawal'}<ArrowUpRightIcon size={18} /></button>
                 </fieldset>
               </form>
               {uncertain && <p className="wallet-feedback wallet-error" role="alert">We couldn’t confirm the withdrawal request. Check your balance and <Link to="/support" onClick={close}>contact support</Link> before trying again.</p>}
@@ -250,7 +253,7 @@ function DepositAddress({ userId, asset, minimum }) {
 
   return (
     <div className="wallet-deposit">
-      <p className="wallet-note">Send only {asset.asset} on {asset.network} to this address. Minimum deposit {minimum}.</p>
+      <p className="wallet-note">Send only <strong>{asset.asset} on {asset.network}</strong> to this address.</p>
       {!result && <p className="wallet-feedback" role="status">Loading deposit address…</p>}
       {result?.error && (
         <div className="wallet-feedback wallet-error">
@@ -262,10 +265,11 @@ function DepositAddress({ userId, asset, minimum }) {
         <div className="wallet-address">
           <strong>Deposit address</strong>
           <code>{result.address}</code>
-          <button type="button" className="wallet-control" onClick={copyAddress}><CopyIcon size={18} /> Copy address</button>
+          <button type="button" className="wallet-primary" onClick={copyAddress}><CopyIcon size={18} /> {copyStatus === 'Address copied.' ? 'Copied' : 'Copy address'}</button>
           <p role="status">{copyStatus}</p>
         </div>
       )}
+      <p className="wallet-note">Minimum deposit <strong>{minimum}</strong></p>
     </div>
   );
 }

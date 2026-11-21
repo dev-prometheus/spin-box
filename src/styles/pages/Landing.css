@@ -219,3 +219,84 @@ body:has(.tsb-welcome-dialog[open]) { overflow: hidden; }
 .tsb-landing .tsb-delivery { background: var(--brand-mint); }
 .tsb-landing .tsb-cash { background: var(--brand-gold); }
 .tsb-landing .tsb-pick-art { justify-self: stretch; max-width: none; }
+
+/* The folded lid and headphones move once, then hold the revealed pose. */
+.tsb-hero-reveal {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  overflow: hidden;
+  border: 2px solid #ed9d2c;
+  border-radius: 28px;
+  background: radial-gradient(ellipse at 50% 42%, #fff4aa 5%, #ffd065 65%, #ffb939 100%);
+  box-shadow: 0 8px 0 #e89a29;
+}
+.tsb-hero-reveal svg { display: block; width: min(100%, 480px); height: auto; }
+.tsb-reveal-lid { transform-box: fill-box; transform-origin: 70% 90%; transform: translate(-16px, -7px) rotate(-15deg); animation: tsb-lid-open 740ms cubic-bezier(.18,.7,.3,1) both; }
+.tsb-reveal-product { animation: tsb-headphones-lift 650ms 200ms cubic-bezier(.18,.7,.3,1) both; }
+@keyframes tsb-lid-open {
+  from { transform: translate(10px, 67px) rotate(21deg); }
+  to { transform: translate(-16px, -7px) rotate(-15deg); }
+}
+@keyframes tsb-headphones-lift {
+  from { transform: translate(201px, 174px) scale(.8); opacity: 0; }
+  to { transform: translate(201px, 116px) scale(1); opacity: 1; }
+}
+.tsb-landing .tsb-hero-spin,
+.tsb-product-review .play-secondary {
+  min-height: 54px;
+  padding: 10px 22px;
+  border: 1px solid #ad380c;
+  border-radius: 14px;
+  background: #ff792e;
+  box-shadow: 0 5px 0 #a5360c;
+  color: #28140c;
+  font: 750 16px/1.2 'DM Sans Variable', sans-serif;
+  cursor: pointer;
+}
+.tsb-landing .tsb-hero-spin:hover,
+.tsb-product-review .play-secondary:hover:not(:disabled) { background: #ff934e; }
+.tsb-landing .tsb-hero-spin:active,
+.tsb-product-review .play-secondary:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 #a5360c; }
+.tsb-product-review .play-secondary:disabled { opacity: .65; cursor: wait; }
+.tsb-product-review {
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  gap: 20px 36px;
+  align-items: center;
+  padding: clamp(18px, 3vw, 36px);
+  border: 1px solid #efc48a;
+  border-radius: 24px;
+  background: #fff1dc;
+  color: #351b0f;
+}
+.tsb-product-review h2 { font-size: clamp(28px, 4vw, 44px); }
+.tsb-product-review p { margin: 8px 0 0; }
+.tsb-product-review .play-inspector { margin: 0; }
+.tsb-product-review .play-inspector input,
+.tsb-result-detail select { background: #fffdf7; color: #351b0f; border: 1px solid #a47959; border-radius: 12px; }
+.tsb-product-review .play-secondary { display: inline-flex; align-items: center; gap: 8px; }
+.tsb-product-result { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 160px) minmax(0, 1fr); gap: 18px; border-top: 1px solid #efc48a; padding-top: 20px; }
+.tsb-result-image { position: relative; display: grid; place-items: center; aspect-ratio: 1; background: #ffe3ac; border-radius: 14px; overflow: hidden; }
+.tsb-result-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fffdf7; }
+.tsb-result-detail { min-width: 0; overflow-wrap: anywhere; }
+.tsb-result-detail h3 { margin: 0; font-size: clamp(18px, 3vw, 26px); }
+.tsb-result-detail label { display: grid; gap: 6px; margin-top: 14px; font-weight: 650; }
+.tsb-result-detail select { width: 100%; max-width: 100%; min-height: 44px; padding: 8px; font: inherit; }
+.tsb-result-quote dl { display: flex; flex-wrap: wrap; gap: 12px 28px; margin-block: 16px 4px; }
+.tsb-result-quote dt { font-size: 14px; }
+.tsb-result-quote dd { margin: 0; font-weight: 750; font-size: 20px; }
+@media (max-width: 760px) {
+  .tsb-hero-reveal svg { max-height: 220px; }
+  .tsb-product-review { grid-template-columns: minmax(0, 1fr); }
+  .tsb-product-result { grid-template-columns: minmax(0, 72px) minmax(0, 1fr); gap: 12px; }
+}
+@media (max-width: 420px) {
+  .tsb-product-review .play-secondary { justify-content: center; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tsb-reveal-lid, .tsb-reveal-product { animation: none; }
+}
+.tsb-landing:has(.tsb-welcome-dialog[open]) :is(.tsb-reveal-lid, .tsb-reveal-product) {
+  animation-play-state: paused;
+}
