@@ -9,15 +9,15 @@
   overflow: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--border-subtle);
-  border-top: 3px solid #ff7057;
-  border-radius: 4px;
-  background: var(--bg-card);
+  color-scheme: light;
+  border-radius: 28px;
+  background: #fffaf2;
   color: var(--text-primary);
-  box-shadow: 8px 8px 0 #0e0c0b;
+  box-shadow: 0 24px 72px #4e200b40;
   font-family: 'DM Sans Variable', Arial, sans-serif;
 }
-.tsb-auth-dialog::backdrop { background: rgb(15 13 12 / 79%); }
-.tsb-auth-dialog :focus-visible { outline: 2px solid #ff947e; outline-offset: 3px; }
+.tsb-auth-dialog::backdrop { background: rgb(74 36 16 / 55%); }
+.tsb-auth-dialog :focus-visible { outline: 2px solid #b83b0a; outline-offset: 3px; }
 
 .tsb-auth-layout { display: grid; grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr); }
 .tsb-auth-ticket {
@@ -26,7 +26,7 @@
   justify-content: space-between;
   gap: 28px;
   padding: 26px 22px 20px;
-  background: var(--brand-gold);
+  background: radial-gradient(circle at 38% 48%, #ffe595 0%, #ffc359 56%, #ff883e 100%);
   color: #34271e;
 }
 .tsb-auth-ticket .tsb-brand { color: inherit; font-size: 20px; }
@@ -37,8 +37,11 @@
   align-self: center;
   width: min(145px, 100%);
   aspect-ratio: 1;
-  border: 1px solid #887259;
-  box-shadow: 5px 5px 0 #c8ad89;
+  border: 3px solid #fff8e8;
+  border-radius: 36px;
+  background: #fff2d5;
+  color: #a53208;
+  box-shadow: 7px 7px 0 #cc510d40;
   transform: rotate(-7deg);
 }
 .tsb-auth-ticket-footer {
@@ -60,7 +63,7 @@
   width: 44px;
   height: 44px;
   border: 1px solid #76665c;
-  border-radius: 3px;
+  border-radius: 14px;
   color: inherit;
   background: transparent;
   cursor: pointer;
@@ -69,7 +72,7 @@
 
 .tsb-auth-content h2 {
   margin: 12px 0 8px;
-  font: 620 clamp(30px, 5vw, 43px)/1 'Outfit Variable', Arial, sans-serif;
+  font: 750 clamp(30px, 5vw, 43px)/1 'Outfit Variable', Arial, sans-serif;
   letter-spacing: -.045em;
 }
 .tsb-auth-description { margin: 0 0 26px; color: var(--text-secondary); font-size: 15px; line-height: 1.55; overflow-wrap: anywhere; }
@@ -81,9 +84,9 @@
   min-width: 0;
   min-height: 50px;
   padding: 10px 13px;
-  border: 1px solid #918075;
-  border-radius: 3px;
-  background: var(--bg-main);
+  border: 1px solid #c4906c;
+  border-radius: 14px;
+  background: #fff;
   color: var(--text-primary);
   font: inherit;
   font-size: 16px;
@@ -99,8 +102,9 @@
   margin-top: 4px;
   padding: 10px 14px;
   border: 1px solid transparent;
-  border-radius: 3px;
-  background: var(--accent-coral);
+  border-radius: 14px;
+  background: linear-gradient(110deg, #ff9b31, #ff7829);
+  border-radius: 999px;
   color: #28140e;
   font: inherit;
   font-weight: 750;
@@ -136,14 +140,3 @@
   .tsb-auth-content { padding: 10px 20px 24px; }
   .tsb-auth-description { margin-bottom: 20px; }
 }
-
-.tsb-auth-dialog {
-  border-radius: 24px;
-  border-top: 1px solid var(--border-subtle);
-  box-shadow: 0 20px 60px #5e29073b;
-}
-.tsb-auth-dialog::backdrop { background: rgb(62 24 9 / 65%); }
-.tsb-auth-ticket { background: linear-gradient(150deg, #ffd479, #fff0cd); }
-.tsb-auth-art { background: #fff8ee; border-radius: 26px; box-shadow: 6px 6px 0 #e5a64b; }
-.tsb-auth-close, .tsb-auth-submit { border-radius: 999px; }
-.tsb-auth-content input { border-radius: 12px; }

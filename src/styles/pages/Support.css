@@ -3,14 +3,14 @@
 .support-intro h1 { font: 650 clamp(38px, 6vw, 64px)/1.05 'Outfit Variable', sans-serif; letter-spacing: -.045em; margin: 12px 0; }
 .tsb-support p { font-size: 15px; line-height: 1.55; margin: 0 0 12px; }
 .tsb-support a { color: var(--brand-link); overflow-wrap: anywhere; }
-.support-card { min-width: 0; display: grid; gap: 14px; padding: clamp(16px, 4vw, 30px); border: 1px solid var(--border-subtle); border-top: 3px solid #ff7057; background: var(--bg-card); }
+.support-card { min-width: 0; display: grid; gap: 14px; padding: clamp(16px, 4vw, 30px); border: 1px solid var(--border-subtle); border-top: 3px solid #ff7057; background: #fffaf2; color-scheme: light; }
 .support-card label { display: grid; gap: 5px; font-size: 15px; font-weight: 650; }
-.support-card input, .support-card select, .support-card textarea { width: 100%; min-height: 44px; border: 1px solid var(--border-subtle); border-radius: 3px; background: var(--bg-main); color: inherit; padding: 8px 10px; font: inherit; font-size: 16px; }
+.support-card input, .support-card select, .support-card textarea { width: 100%; min-height: 44px; border: 1px solid var(--border-subtle); border-radius: 3px; background: #fff; color: inherit; padding: 8px 10px; font: inherit; font-size: 16px; }
 .support-card textarea { resize: vertical; }
 .support-card button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; justify-self: start; min-height: 44px; padding: 8px 14px; border: 0; border-radius: 3px; background: var(--accent-coral); color: #28140e; font: inherit; font-weight: 750; cursor: pointer; }
 .support-card button:disabled { opacity: .65; cursor: default; }
 .support-card [role="alert"] { color: var(--brand-error); }
-.tsb-support :focus-visible { outline: 2px solid #ff9d88; outline-offset: 3px; }
+.tsb-support :focus-visible { outline: 2px solid #b83b0a; outline-offset: 3px; }
 @media (max-width: 680px) { .tsb-support { grid-template-columns: minmax(0, 1fr); padding-block: 30px 44px; } }
 
 .support-intro > svg {
@@ -18,10 +18,10 @@
   height: 58px;
   padding: 16px;
   border-radius: 18px;
-  background: var(--brand-gold);
+  background: #ffd16f;
   color: var(--brand-link);
 }
 .support-intro p { color: var(--text-secondary); }
-.support-card { border-radius: 22px; box-shadow: 0 8px 0 var(--brand-peach); }
+.support-card { border-radius: 22px; box-shadow: 0 8px 0 #ffcb85; }
 .support-card input, .support-card select, .support-card textarea { border-radius: 10px; }
 .support-card button { border-radius: 999px; padding-inline: 20px; }
