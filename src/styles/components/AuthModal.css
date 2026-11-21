@@ -8,11 +8,11 @@
   padding: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  border: 1px solid #746257;
+  border: 1px solid var(--border-subtle);
   border-top: 3px solid #ff7057;
   border-radius: 4px;
-  background: #262220;
-  color: #f1eee7;
+  background: var(--bg-card);
+  color: var(--text-primary);
   box-shadow: 8px 8px 0 #0e0c0b;
   font-family: 'DM Sans Variable', Arial, sans-serif;
 }
@@ -26,7 +26,7 @@
   justify-content: space-between;
   gap: 28px;
   padding: 26px 22px 20px;
-  background: #e6d8bf;
+  background: var(--brand-gold);
   color: #34271e;
 }
 .tsb-auth-ticket .tsb-brand { color: inherit; font-size: 20px; }
@@ -53,7 +53,7 @@
 
 .tsb-auth-content { min-width: 0; padding: 22px 32px 32px; }
 .tsb-auth-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.tsb-auth-top p { margin: 0; color: #ffad9b; font-size: 13px; font-weight: 700; }
+.tsb-auth-top p { margin: 0; color: var(--brand-link); font-size: 13px; font-weight: 700; }
 .tsb-auth-close {
   display: grid;
   place-items: center;
@@ -65,15 +65,15 @@
   background: transparent;
   cursor: pointer;
 }
-.tsb-auth-close:hover { background: #3b302a; }
+.tsb-auth-close:hover { background: var(--brand-peach); }
 
 .tsb-auth-content h2 {
   margin: 12px 0 8px;
   font: 620 clamp(30px, 5vw, 43px)/1 'Outfit Variable', Arial, sans-serif;
   letter-spacing: -.045em;
 }
-.tsb-auth-description { margin: 0 0 26px; color: #d9cdc3; font-size: 15px; line-height: 1.55; overflow-wrap: anywhere; }
-.tsb-auth-description strong { color: #f1eee7; }
+.tsb-auth-description { margin: 0 0 26px; color: var(--text-secondary); font-size: 15px; line-height: 1.55; overflow-wrap: anywhere; }
+.tsb-auth-description strong { color: var(--text-primary); }
 .tsb-auth-content form { display: grid; gap: 10px; }
 .tsb-auth-content label { font-size: 14px; font-weight: 700; }
 .tsb-auth-content input {
@@ -83,12 +83,12 @@
   padding: 10px 13px;
   border: 1px solid #918075;
   border-radius: 3px;
-  background: #1b1918;
-  color: #f1eee7;
+  background: var(--bg-main);
+  color: var(--text-primary);
   font: inherit;
   font-size: 16px;
 }
-.tsb-auth-content input::placeholder { color: #ac9c8f; opacity: 1; }
+.tsb-auth-content input::placeholder { color: var(--text-secondary); opacity: 1; }
 .tsb-auth-content .tsb-auth-code { font-size: 23px; font-weight: 700; text-align: center; letter-spacing: .36em; font-variant-numeric: tabular-nums; }
 .tsb-auth-submit {
   display: flex;
@@ -100,14 +100,14 @@
   padding: 10px 14px;
   border: 1px solid transparent;
   border-radius: 3px;
-  background: #ff7057;
+  background: var(--accent-coral);
   color: #28140e;
   font: inherit;
   font-weight: 750;
   cursor: pointer;
 }
-.tsb-auth-submit:hover:not(:disabled) { background: #ff937e; }
-.tsb-auth-submit:disabled { background: #463a34; color: #ddcfc3; cursor: default; }
+.tsb-auth-submit:hover:not(:disabled) { background: var(--brand-hover); }
+.tsb-auth-submit:disabled { background: #f6e4d8; color: var(--text-secondary); cursor: default; }
 
 .tsb-auth-recovery { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-top: 8px; }
 .tsb-auth-recovery button {
@@ -118,7 +118,7 @@
   border: 0;
   padding: 0 2px;
   background: transparent;
-  color: #f1eee7;
+  color: var(--text-primary);
   font: inherit;
   font-size: 14px;
   text-decoration: underline;
@@ -126,8 +126,8 @@
   cursor: pointer;
 }
 .tsb-auth-recovery button:disabled { opacity: .65; cursor: default; }
-.tsb-auth-feedback { margin: 2px 0; padding: 9px 12px; border-left: 2px solid #ccdaa8; background: #323528; color: #f1eee7; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
-.tsb-auth-feedback.is-error { border-color: #ff947e; background: #3b2621; }
+.tsb-auth-feedback { margin: 2px 0; padding: 9px 12px; border-left: 2px solid #ccdaa8; background: var(--brand-mint); color: var(--text-primary); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+.tsb-auth-feedback.is-error { border-color: #ff947e; background: #fff0ec; }
 
 @media (max-width: 600px) {
   .tsb-auth-layout { grid-template-columns: minmax(0, 1fr); }
@@ -136,3 +136,14 @@
   .tsb-auth-content { padding: 10px 20px 24px; }
   .tsb-auth-description { margin-bottom: 20px; }
 }
+
+.tsb-auth-dialog {
+  border-radius: 24px;
+  border-top: 1px solid var(--border-subtle);
+  box-shadow: 0 20px 60px #5e29073b;
+}
+.tsb-auth-dialog::backdrop { background: rgb(62 24 9 / 65%); }
+.tsb-auth-ticket { background: linear-gradient(150deg, #ffd479, #fff0cd); }
+.tsb-auth-art { background: #fff8ee; border-radius: 26px; box-shadow: 6px 6px 0 #e5a64b; }
+.tsb-auth-close, .tsb-auth-submit { border-radius: 999px; }
+.tsb-auth-content input { border-radius: 12px; }

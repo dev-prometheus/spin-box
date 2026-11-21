@@ -51,6 +51,10 @@
 }
 .play-wheel-label-0 { top: 22%; left: 50%; }
 .play-wheel-label-1 { top: 63%; left: 74%; rotate: 120deg; }
-.play-wheel-label-2 { top: 63%; left: 26%; rotate: 240deg; color: #f4e7dd; }
-.play-wheel-caption { margin: 16px auto 12px; color: #cec0b4; font-size: 12px; line-height: 1.5; }
+.play-wheel-label-2 { top: 63%; left: 26%; rotate: 240deg; color: var(--text-primary); }
+.play-wheel-caption { margin: 16px auto 12px; color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
 .play-sr-only { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
+
+.play-wheel-frame { background: #e05016; border-color: #a53208; box-shadow: 0 0 0 5px #ffe1b7; }
+.play-wheel-disc { background: conic-gradient(from -60deg, #ff8e44 0deg 120deg, #ffd166 120deg 240deg, #ffe3d4 240deg 360deg); }
+.play-wheel-pointer { background: #9c310a; }

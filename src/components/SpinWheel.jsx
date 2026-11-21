@@ -72,7 +72,7 @@ export default function SpinWheel({ onRequestServerSpin, onSpinResult, onBusyCha
             <span className={`play-wheel-label play-wheel-label-${index}`} key={id}>{label}</span>
           ))}
         </div>
-        <div className="play-wheel-hub"><img src="/reveal-fold.svg" width="40" height="40" alt="" /></div>
+        <div className="play-wheel-hub"><img src="/favicon.svg" width="40" height="40" alt="" /></div>
       </div>
       <p className="play-wheel-caption">Wheel segments illustrate outcomes. They don’t show the odds.</p>
       <button type="button" onClick={spin} disabled={disabled || Boolean(phase)} className="play-primary">

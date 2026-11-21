@@ -1,21 +1,29 @@
 :root {
-  /* Slate Dark Core Palette */
-  --bg-main: #0d1117;
-  --bg-card: #161b22;
-  --bg-card-hover: #21262d;
-  --border-subtle: #30363d;
+  /* Storefront palette */
+  --bg-main: #fff8ee;
+  --bg-card: #ffffff;
+  --bg-card-hover: #ffeddd;
+  --border-subtle: #e6c4aa;
 
   /* Brand Accents */
-  --accent-coral: #ff5000;
-  --accent-coral-active: #e04600;
+  --accent-coral: #ff7829;
+  --accent-coral-active: #db490b;
   --accent-coral-subtle: rgba(255, 80, 0, 0.12);
-  --accent-emerald: #09b85d;
+  --accent-emerald: #17634a;
   --accent-emerald-subtle: rgba(9, 184, 93, 0.12);
-  --accent-blue: #2f81f7;
+  --accent-blue: #245bb0;
+
+  --brand-peach: #ffebda;
+  --brand-gold: #ffe4a6;
+  --brand-mint: #dff6e8;
+  --brand-hover: #ff984d;
+  --brand-link: #a53208;
+  --brand-green: #17634a;
+  --brand-error: #a52820;
 
   /* Typography */
-  --text-primary: #f0f6fc;
-  --text-secondary: #8b949e;
+  --text-primary: #37190d;
+  --text-secondary: #684737;
 
   /* Radii & Transitions */
   --radius-sm: 8px;

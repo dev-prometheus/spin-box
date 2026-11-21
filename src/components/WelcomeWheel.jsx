@@ -145,7 +145,7 @@ export default function WelcomeWheel({ onClaim }) {
           })}
           <circle cx="250" cy="250" r="56" fill="#7c280c" stroke="#ffe1b7" strokeWidth="3" />
         </svg>
-        <div className="welcome-wheel-hub" aria-hidden="true"><img src="/reveal-fold.svg" alt="" width="42" height="42" /></div>
+        <div className="welcome-wheel-hub" aria-hidden="true"><img src="/favicon.svg" alt="" width="42" height="42" /></div>
       </div>
       <div className="welcome-reward-line"><span>{ready ? 'Ready to claim' : 'Welcome reward'}</span><strong>{reward}</strong></div>
       <p className="welcome-feedback" role="status" aria-live="polite">{ready ? 'Verify your email to claim your welcome reward.' : message}</p>
